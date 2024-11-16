@@ -3,7 +3,7 @@
 namespace ServerConnection {
 
     void handle_connection(int client_fd) {
-        char[1024] buffer {};
+        char[1024] buffer;
         while (true) {
             size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
             if (bytes_received <= 0) break;
@@ -18,6 +18,7 @@ namespace ServerConnection {
     }
 
     void listener(int server_fd) {
+        std::vector<std::thread> threads {};
         while (true) {
             struct sockaddr_in client_addr {};
             int client_addr_len = sizeof(client_addr);

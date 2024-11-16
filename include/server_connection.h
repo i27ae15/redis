@@ -30,7 +30,6 @@ namespace ServerConnection {
 
         private:
 
-            std::vector<std::thread> threads;
             int server_fd;
             bool connection_status;
 
