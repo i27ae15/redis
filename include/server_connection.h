@@ -13,8 +13,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-constexpr size_t BUFFER_SIZE = 1024;
-
 namespace ServerConnection {
 
     void handle_connection(int client_fd);
