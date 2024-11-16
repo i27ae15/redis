@@ -1,19 +1,35 @@
 #include <server_connection.h>
 
-  void listener(int server_fd) {
+void handle_connection(int client_fd) {
 
-      PRINT_SUCCESS("Listener Started");
+    char buffer[1024];
+    while (true) {
+        size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+        if (bytes_received <= 0) break;
 
-      std::vector<std::thread> threads {};
-      while (true) {
-          struct sockaddr_in client_addr {};
-          int client_addr_len = sizeof(client_addr);
-          int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+        buffer[bytes_received] = '\0';
 
-          threads.emplace_back(std::thread(handle_connection, client_fd)).detach();
-      }
-      close(server_fd);
-  }
+        if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") == 0 ) {
+        send(client_fd, "+PONG\r\n", 7, 0);
+        }
+    }
+    close(client_fd);
+}
+
+void listener(int server_fd) {
+
+    PRINT_SUCCESS("Listener Started");
+
+    std::vector<std::thread> threads {};
+    while (true) {
+        struct sockaddr_in client_addr {};
+        int client_addr_len = sizeof(client_addr);
+        int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+
+        threads.emplace_back(std::thread(handle_connection, client_fd)).detach();
+    }
+    close(server_fd);
+}
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr

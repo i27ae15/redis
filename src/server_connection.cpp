@@ -2,23 +2,6 @@
 
 namespace ServerConnection {
 
-
-    void handle_connection(int client_fd) {
-
-        char buffer[1024];
-        while (true) {
-            size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-            if (bytes_received <= 0) break;
-
-            buffer[bytes_received] = '\0';
-
-            if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") == 0 ) {
-            send(client_fd, "+PONG\r\n", 7, 0);
-            }
-        }
-        close(client_fd);
-    }
-
     ConnectionManager::ConnectionManager() :
     server_fd {},
     connection_status {}
