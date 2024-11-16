@@ -66,7 +66,6 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-  while (true) {
     struct sockaddr_in client_addr {};
     int client_addr_len = sizeof(client_addr);
 
@@ -76,23 +75,16 @@ int main(int argc, char **argv) {
     if (client_fd < 0) continue;
 
     std::cout << "Client connected\n";
-    char buffer[1024];
-    while (true) {
-      size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 
-      buffer[bytes_received] = '\0';
-      std::cout << "Received " << buffer << + "\n";
+  char buffer[1024];
+  while (true) {
+    size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 
-      // Check if the client sent "PING"
-      if (std::strncmp(buffer, "PING", 4) == 0) {
-          send(client_fd, "+PONG\r\n", 7, 0);
-          std::cout << "Sent: +PONG\r\n";
-      } else {
-          std::cerr << "Unknown command received, ignoring.\n";
-      }
-    }
-    close(client_fd);
+    buffer[bytes_received] = '\0';
+    std::cout << "Received " << buffer << + "\n";
 
+    if (strcasecmp(buff,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
+      send(client_fd, "+PONG\r\n", 7, 0);
 
   }
 
