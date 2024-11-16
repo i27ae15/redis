@@ -26,6 +26,9 @@ namespace ServerConnection {
         bool get_connection_status();
         void listener();
 
+        ConnectionManager();
+        ~ConnectionManager();
+
         private:
 
             std::vector<std::thread>> threads;
@@ -33,7 +36,6 @@ namespace ServerConnection {
             int server_fd;
             bool connection_status;
 
-            ConnectionManager();
 
             void create_socket();
             void check_address();
