@@ -2,7 +2,8 @@
 
 namespace ServerConnection {
 
-    void handle_connection(int client_fd, char[BUFFER_SIZE] buffer) {
+    void handle_connection(int client_fd) {
+        char[BUFFER_SIZE] buffer {};
         while (true) {
             size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
             if (bytes_received <= 0) break;
@@ -16,7 +17,7 @@ namespace ServerConnection {
         close(client_fd);
     }
 
-    void listener(int server_fd, char[BUFFER_SIZE] buffer) {
+    void listener(int server_fd) {
         while (true) {
             struct sockaddr_in client_addr {};
             int client_addr_len = sizeof(client_addr);

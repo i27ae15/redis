@@ -9,7 +9,6 @@ int main(int argc, char **argv) {
   if (!conn.get_connection_status()) return 1;
 
   int server_fd = conn.get_server_fd();
-  char[BUFFER_SIZE] buffer = conn.get;
   ServerConnection::listener(server_fd);
 
   return 0;

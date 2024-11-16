@@ -13,13 +13,13 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 1024;
 
 
 namespace ServerConnection {
 
-    void handle_connection(int client_fd, char[BUFFER_SIZE] buffer);
-    void listener(int& server_fd, char[BUFFER_SIZE] buffer);
+    void handle_connection(int client_fd);
+    void listener(int server_fd);
 
     class ConnectionManager {
 
@@ -34,7 +34,6 @@ namespace ServerConnection {
         private:
 
             std::vector<std::thread> threads;
-            char buffer[BUFFER_SIZE];
             int server_fd;
             bool connection_status;
 
