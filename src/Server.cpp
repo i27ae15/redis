@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
   // Uncomment this block to pass the first stage
 
   int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-  send(client_id, "+PONG\r\n")
+  send(client_id, "+PONG\r\n", 7, 0);
   std::cout << "Client connected\n";
 
   close(server_fd);
