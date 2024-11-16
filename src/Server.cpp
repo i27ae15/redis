@@ -59,8 +59,6 @@ void handleConnection(int client_fd) {
     size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 
     buffer[bytes_received] = '\0';
-    std::cout << "Received " << buffer << + "\n";
-
     if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
     send(client_fd, "+PONG\r\n", 7, 0);
   }
