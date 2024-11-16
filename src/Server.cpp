@@ -88,8 +88,7 @@ int main(int argc, char **argv) {
           send(client_fd, "+PONG\r\n", 7, 0);
           std::cout << "Sent: +PONG\r\n";
       } else {
-          send(client_fd, "-ERR unknown command\r\n", 23, 0);
-          std::cout << "Sent: -ERR unknown command\r\n";
+          std::cerr << "Unknown command received, ignoring.\n";
       }
     close(client_fd);
   }
