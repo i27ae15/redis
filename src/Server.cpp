@@ -66,14 +66,16 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  struct sockaddr_in client_addr;
+  int client_addr_len = sizeof(client_addr);
+
   while (true) {
 
-    struct sockaddr_in client_addr;
-    int client_addr_len = sizeof(client_addr);
     std::cout << "Waiting for a client to connect...\n";
 
     int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
     if (client_fd < 0) continue;
+
     send(client_fd, "+PONG\r\n", 7, 0);
     std::cout << "Client connected\n";
   }
