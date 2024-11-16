@@ -2,10 +2,10 @@
 
 namespace ServerConnection {
 
-    char[1024] buffer = {};
 
     void handle_connection(int client_fd) {
 
+        char buffer[1024];
         while (true) {
             size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
             if (bytes_received <= 0) break;
