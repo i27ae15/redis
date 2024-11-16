@@ -19,21 +19,6 @@ namespace ServerConnection {
         close(client_fd);
     }
 
-    void listener(int server_fd) {
-
-        PRINT_SUCCESS("Listener Started");
-
-        std::vector<std::thread> threads {};
-        while (true) {
-            struct sockaddr_in client_addr {};
-            int client_addr_len = sizeof(client_addr);
-            int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-
-            threads.emplace_back(std::thread(handle_connection, client_fd)).detach();
-        }
-        close(server_fd);
-    }
-
     ConnectionManager::ConnectionManager() :
     server_fd {},
     connection_status {}
