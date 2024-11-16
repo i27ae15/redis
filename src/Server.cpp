@@ -15,7 +15,7 @@ int createSocket() {
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (server_fd < 0) {
    std::cerr << "Failed to create server socket\n";
-   throw std::runtime_error();
+   throw std::runtime_error("Failed to create server socket");
   }
 
   return server_fd;
@@ -28,7 +28,7 @@ void checkAddress(int server_fd) {
   int reuse = 1;
   if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
     std::cerr << "setsockopt failed\n";
-    throw std::runtime_error();
+    throw std::runtime_error("setsockopt failed");
   }
 
   struct sockaddr_in server_addr;
@@ -38,7 +38,7 @@ void checkAddress(int server_fd) {
 
   if (bind(server_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
     std::cerr << "Failed to bind to port 6379\n";
-    throw std::runtime_error();
+    throw std::runtime_error("Failed to bind to port 6379");
   }
 }
 
@@ -46,7 +46,7 @@ void checkConnection(int server_fd) {
   int connection_backlog = 5;
   if (listen(server_fd, connection_backlog) != 0) {
     std::cerr << "listen failed\n";
-    throw std::runtime_error();
+    throw std::runtime_error("listen failed");
   }
 }
 
