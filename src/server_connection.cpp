@@ -38,6 +38,7 @@ namespace ServerConnection {
     server_fd {},
     connection_status {}
     {
+        connection_status = true;
         create_socket();
         check_address();
         check_connection();
