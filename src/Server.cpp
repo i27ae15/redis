@@ -55,13 +55,11 @@ void checkConnection(int server_fd) {
 
 void handleConnection(int client_fd) {
   char buffer[1024];
-  while (true) {
-    size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+  size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 
-    buffer[bytes_received] = '\0';
-    if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
-    send(client_fd, "+PONG\r\n", 7, 0);
-  }
+  buffer[bytes_received] = '\0';
+  if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
+  send(client_fd, "+PONG\r\n", 7, 0);
 }
 
 int main(int argc, char **argv) {
@@ -84,9 +82,8 @@ int main(int argc, char **argv) {
   while (true) {
     struct sockaddr_in client_addr {};
     int client_addr_len = sizeof(client_addr);
-
-
     int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+
     threads.emplace_back(std::thread(handleConnection, client_fd)).detach();
     close(server_fd);
   }
