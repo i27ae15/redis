@@ -18,8 +18,8 @@
 
 namespace ServerConnection {
 
-    void handle_connection(int client_fd);
-    void listener(int& server_fd);
+    void handle_connection(int client_fd, char[BUFFER_SIZE] buffer);
+    void listener(int& server_fd, char[BUFFER_SIZE] buffer);
 
     class ConnectionManager {
 
