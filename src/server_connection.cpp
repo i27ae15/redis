@@ -1,7 +1,7 @@
 #include <server_connection.h>
+#include <helper.h>
 
 namespace ServerConnection {
-
 
     void handle_connection(int client_fd) {
 
@@ -12,9 +12,10 @@ namespace ServerConnection {
 
             buffer[bytes_received] = '\0';
 
-            if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") == 0 ) {
-            send(client_fd, "+PONG\r\n", 7, 0);
-            }
+            Helper::ProtocolIdentifier protocol_identifer(buffer);
+
+            Helper::ReturnObject* rObject = protocol_identifer.getRObject();
+            send(client_fd, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
         }
         close(client_fd);
     }
@@ -43,7 +44,7 @@ namespace ServerConnection {
         check_address();
         check_connection();
 
-        PRINT_SUCCESS("Connection Stablished");
+        if (connection_status) PRINT_SUCCESS("Connection Stablished");
     }
 
     ConnectionManager::~ConnectionManager() {
@@ -61,7 +62,7 @@ namespace ServerConnection {
     void ConnectionManager::create_socket() {
         int server_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (server_fd < 0) {
-            std::cerr << "Failed to create server socket\n";
+            PRINT_ERROR("Failed to create server socket");
             connection_status = false;
             return;
             }
@@ -75,7 +76,7 @@ namespace ServerConnection {
         // ensures that we don't run into 'Address already in use' errors
         int reuse = 1;
         if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-            std::cerr << "setsockopt failed\n";
+            PRINT_ERROR("setsockopt failed");
             connection_status = false;
             return;
         }
@@ -87,7 +88,7 @@ namespace ServerConnection {
 
         if (bind(server_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
             connection_status = false;
-            std::cerr << "Failed to bind to port 6379\n";
+            PRINT_ERROR("Failed to bind to port 6379");
             return;
         }
     }
@@ -95,7 +96,7 @@ namespace ServerConnection {
     void ConnectionManager::check_connection() {
         int connection_backlog = 5;
         if (listen(server_fd, connection_backlog) != 0) {
-            std::cerr << "listen failed\n";
+            PRINT_ERROR("listen failed");
             connection_status = false;
         }
     }
