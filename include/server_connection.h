@@ -24,7 +24,6 @@ namespace ServerConnection {
 
         int get_server_fd();
         bool get_connection_status();
-        void listener();
 
         ConnectionManager();
         ~ConnectionManager();
@@ -36,11 +35,12 @@ namespace ServerConnection {
             int server_fd;
             bool connection_status;
 
-
             void create_socket();
             void check_address();
             void check_connection();
-            void handle_connection(int client_fd);
     };
+
+    void handle_connection(int client_fd);
+    void listener(int& server_fd);
 
 }
