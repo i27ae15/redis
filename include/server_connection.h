@@ -17,6 +17,8 @@
 
 namespace ServerConnection {
 
+    void handle_connection(int client_fd);
+    void listener(int server_fd);
 
     class ConnectionManager {
 
