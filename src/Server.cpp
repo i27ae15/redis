@@ -51,13 +51,11 @@ void checkConnection(int server_fd) {
 }
 
 int main(int argc, char **argv) {
-  while (true) {
     // Flush after every std::cout / std::cerr
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
 
     int server_fd {};
-
 
     try {
       server_fd = createSocket();
@@ -68,6 +66,8 @@ int main(int argc, char **argv) {
       return 1;
     }
 
+  char buffer[1024];
+  while (true) {
     struct sockaddr_in client_addr {};
     int client_addr_len = sizeof(client_addr);
 
@@ -76,9 +76,21 @@ int main(int argc, char **argv) {
     int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
     if (client_fd < 0) continue;
 
-    send(client_fd, "+PONG\r\n", 7, 0);
     std::cout << "Client connected\n";
 
+    size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+
+    buffer[bytes_received] = '\0';
+    std::cout << "Received " << buffer "\n";
+
+    // Check if the client sent "PING"
+      if (std::strncmp(buffer, "PING", 4) == 0) {
+          send(client_fd, "+PONG\r\n", 7, 0);
+          std::cout << "Sent: +PONG\r\n";
+      } else {
+          send(client_fd, "-ERR unknown command\r\n", 23, 0);
+          std::cout << "Sent: -ERR unknown command\r\n";
+      }
     close(client_fd);
   }
 
