@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     buffer[bytes_received] = '\0';
     std::cout << "Received " << buffer << + "\n";
 
-    if (strcasecmp(buff,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
+    if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
       send(client_fd, "+PONG\r\n", 7, 0);
 
   }
