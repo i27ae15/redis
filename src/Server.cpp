@@ -3,6 +3,9 @@
 #include <string>
 #include <cstring>
 #include <stdexcept>
+#include <thread>
+#include <vector>
+#include <atomic>
 
 #include <unistd.h>
 #include <sys/types.h>
