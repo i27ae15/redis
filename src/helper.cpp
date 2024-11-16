@@ -19,9 +19,9 @@ namespace Helper {
         identify_protocol();
 
         if (protocol.size()) {
-            PRINT_SUCCESS("Protocol identified as " + protocol);
+            // PRINT_SUCCESS("Protocol identified as " + protocol);
         } else {
-            PRINT_ERROR("Protocol not identified");
+            // PRINT_ERROR("Protocol not identified");
         }
     }
 
@@ -39,12 +39,12 @@ namespace Helper {
 
     size_t ProtocolIdentifier::searchProtocol(std::string search_word) {
 
-        PRINT_WARNING(search_word);
-        PRINT_WARNING("In searchProtocol " + cleaned_buffer);
+        // PRINT_WARNING(search_word);
+        // PRINT_WARNING("In searchProtocol " + cleaned_buffer);
         int index {};
         index = cleaned_buffer.find(search_word);
 
-        PRINT_WARNING(std::to_string(index));
+        // PRINT_WARNING(std::to_string(index));
 
         if (index != std::string::npos) protocol = search_word;
         return index;
@@ -54,13 +54,12 @@ namespace Helper {
     std::string ProtocolIdentifier::getVariable(
         size_t starts_at, char listenOnSymbol, char endsOnSymbol
     ) {
+        // This should be better implemeted
+        // check the cleanedBuffer
         std::regex not_digit("[^0-9]");
         bool listen = false;
 
         std::string variable {};
-
-        auto rule = not_digit;
-
         bool cleanFrontDigits = false;
 
         for (size_t i = starts_at; i < cleaned_buffer.size(); i++) {
@@ -86,6 +85,20 @@ namespace Helper {
         return variable;
     }
 
+    std::pair<bool, size_t> ProtocolIdentifier::getExpireTime() {
+        size_t index = searchProtocol("px");
+        if (index == std::string::npos) return {false, 0};
+
+        // In searchProtocol *5$3set$6orange$9blueberry$2px$3100
+        index += 4; // px.size + $n.size
+        std::string nStr {};
+        for (size_t i = index; i < cleaned_buffer.size(); i++) {
+            nStr += cleaned_buffer[i];
+        }
+
+        return {true, std::stoi(nStr)};
+    }
+
     bool ProtocolIdentifier::identify_protocol() {
         std::regex non_printable("[^\\x20-\\x7E]+");
 
@@ -98,7 +111,7 @@ namespace Helper {
         cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
 
         // Output the result
-        PRINT_WARNING(cleaned_buffer);
+        // PRINT_WARNING(cleaned_buffer);
 
         if (identifyPing()) return true;
         if (identifyEcho()) return true;
@@ -143,8 +156,11 @@ namespace Helper {
         std::string key = getVariable(index);
         std::string value = getVariable(index + key.size()); // Not correct the sum, but will work
 
+        // Check if has px
+        std::pair<bool, size_t> expireTime = getExpireTime();
+
         Cache::DataManager cache;
-        cache.setValue(key, value);
+        cache.setValue(key, value, expireTime.first, expireTime.second);
 
         rObject = new ReturnObject("+OK\r\n", 0);
         return true;
@@ -158,7 +174,7 @@ namespace Helper {
 
         std::string key = getVariable(index);
 
-        PRINT_SUCCESS("key " + key);
+        // PRINT_SUCCESS("key " + key);
 
         Cache::DataManager cache;
         std::optional<std::string> value = cache.getValue(key);
@@ -169,7 +185,6 @@ namespace Helper {
         }
 
         std::string response = constructProtocol({value.value()}, false);
-        PRINT_SUCCESS(response);
         rObject = new ReturnObject(response, 0);
 
         return true;

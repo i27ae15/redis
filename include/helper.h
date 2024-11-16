@@ -38,6 +38,8 @@ namespace Helper {
         std::string protocol;
         std::string cleaned_buffer;
 
+        std::pair<bool, size_t> getExpireTime();
+
         bool identify_protocol();
         bool identifyPing();
         bool identifyEcho();
