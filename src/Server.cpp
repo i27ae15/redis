@@ -21,7 +21,7 @@ int createSocket() {
   return server_fd;
 }
 
-void checkAddress() {
+void checkAddress(int server_fd) {
 
   // Since the tester restarts your program quite often, setting SO_REUSEADDR
   // ensures that we don't run into 'Address already in use' errors
@@ -42,7 +42,7 @@ void checkAddress() {
   }
 }
 
-void checkConnection() {
+void checkConnection(int server_fd) {
   int connection_backlog = 5;
   if (listen(server_fd, connection_backlog) != 0) {
     std::cerr << "listen failed\n";
@@ -59,8 +59,8 @@ int main(int argc, char **argv) {
 
   try {
     server_fd = createSocket();
-    checkAddress();
-    checkConnection();
+    checkAddress(server_fd);
+    checkConnection(server_fd);
   }
   catch ( const std::runtime_error& e ) {
     return 1;
