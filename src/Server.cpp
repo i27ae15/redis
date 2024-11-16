@@ -57,10 +57,11 @@ int main(int argc, char **argv) {
 
   int server_fd {};
 
-  try:
+  try {
     server_fd = createSocket();
     checkAddress();
     checkConnection();
+  }
   catch ( const std::runtime_error& e ) {
     return 1;
   }
