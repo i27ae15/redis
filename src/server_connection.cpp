@@ -1,6 +1,5 @@
 #include "server_connection.h"
 
-
 namespace ServerConnection {
 
     ConnectionManager::ConnectionManager() :

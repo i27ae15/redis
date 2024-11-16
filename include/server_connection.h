@@ -31,7 +31,7 @@ namespace ServerConnection {
 
         private:
 
-            std::vector<std::thread>> threads;
+            std::vector<std::thread> threads;
             char buffer[BUFFER_SIZE];
             int server_fd;
             bool connection_status;
