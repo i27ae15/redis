@@ -50,30 +50,7 @@ void checkConnection(int server_fd) {
   }
 }
 
-int main(int argc, char **argv) {
-    // Flush after every std::cout / std::cerr
-    std::cout << std::unitbuf;
-    std::cerr << std::unitbuf;
-
-    int server_fd {};
-
-    try {
-      server_fd = createSocket();
-      checkAddress(server_fd);
-      checkConnection(server_fd);
-    }
-    catch ( const std::runtime_error& e ) {
-      return 1;
-    }
-
-    struct sockaddr_in client_addr {};
-    int client_addr_len = sizeof(client_addr);
-
-    std::cout << "Waiting for a client to connect...\n";
-
-    int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-    std::cout << "Client connected\n";
-
+void handleConnection() {
   char buffer[1024];
   while (true) {
     size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
@@ -83,9 +60,34 @@ int main(int argc, char **argv) {
 
     if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
     send(client_fd, "+PONG\r\n", 7, 0);
+  }
+}
 
+int main(int argc, char **argv) {
+  // Flush after every std::cout / std::cerr
+  std::cout << std::unitbuf;
+  std::cerr << std::unitbuf;
+
+  int server_fd {};
+
+  try {
+    server_fd = createSocket();
+    checkAddress(server_fd);
+    checkConnection(server_fd);
+  }
+  catch ( const std::runtime_error& e ) {
+    return 1;
   }
 
+  struct sockaddr_in client_addr {};
+  int client_addr_len = sizeof(client_addr);
+
+  std::cout << "Waiting for a client to connect...\n";
+
+  int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+  std::cout << "Client connected\n";
+
+  handleConnection();
   close(server_fd);
 
   return 0;
