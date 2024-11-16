@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
 
     buffer[bytes_received] = '\0';
-    std::cout << "Received " << buffer + "\n";
+    std::cout << "Received " << buffer << + "\n";
 
     // Check if the client sent "PING"
       if (std::strncmp(buffer, "PING", 4) == 0) {
