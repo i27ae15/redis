@@ -60,7 +60,7 @@ namespace ServerConnection {
             return;
             }
 
-        this->server_fd;
+        this->server_fd = server_fd;
     }
 
     void ConnectionManager::check_address() {
