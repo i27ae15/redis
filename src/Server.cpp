@@ -60,8 +60,10 @@ void handleConnection(int client_fd) {
     if (bytes_received <= 0) break;
 
     buffer[bytes_received] = '\0';
-    if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
-    send(client_fd, "+PONG\r\n", 7, 0);
+
+    if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") ==0 ) {
+      send(client_fd, "+PONG\r\n", 7, 0);
+    }
   }
 
   close(client_fd);
