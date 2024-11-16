@@ -18,6 +18,9 @@
 
 namespace ServerConnection {
 
+    void handle_connection(int client_fd);
+    void listener(int& server_fd);
+
     class ConnectionManager {
 
         public:
@@ -40,7 +43,5 @@ namespace ServerConnection {
             void check_connection();
     };
 
-    void handle_connection(int client_fd);
-    void listener(int& server_fd);
 
 }

@@ -48,7 +48,7 @@ namespace ServerConnection {
 
     // METHODS
 
-    ConnectionManager::create_socket() {
+    void ConnectionManager::create_socket() {
         int server_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (server_fd < 0) {
             std::cerr << "Failed to create server socket\n";
