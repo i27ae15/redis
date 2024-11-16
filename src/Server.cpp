@@ -57,17 +57,16 @@ int main(int argc, char **argv) {
 
   int server_fd {};
 
-  try {
-    server_fd = createSocket();
-    checkAddress(server_fd);
-    checkConnection(server_fd);
-  }
-  catch ( const std::runtime_error& e ) {
-    return 1;
-  }
-
-
   while (true) {
+
+    try {
+      server_fd = createSocket();
+      checkAddress(server_fd);
+      checkConnection(server_fd);
+    }
+    catch ( const std::runtime_error& e ) {
+      return 1;
+    }
 
     struct sockaddr_in client_addr {};
     int client_addr_len = sizeof(client_addr);
