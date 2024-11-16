@@ -72,8 +72,6 @@ int main(int argc, char **argv) {
     std::cout << "Waiting for a client to connect...\n";
 
     int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
-    if (client_fd < 0) continue;
-
     std::cout << "Client connected\n";
 
   char buffer[1024];
@@ -84,7 +82,7 @@ int main(int argc, char **argv) {
     std::cout << "Received " << buffer << + "\n";
 
     if (strcasecmp(buffer,"*1\r\n$4\r\nping\r\n") !=0 ) continue;
-      send(client_fd, "+PONG\r\n", 7, 0);
+    send(client_fd, "+PONG\r\n", 7, 0);
 
   }
 
