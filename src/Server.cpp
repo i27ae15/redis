@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  std::vector<std::thread> threads;
   while (true) {
     struct sockaddr_in client_addr {};
     int client_addr_len = sizeof(client_addr);
