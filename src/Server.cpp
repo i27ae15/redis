@@ -8,7 +8,8 @@ int main(int argc, char **argv) {
   ServerConnection::ConnectionManager conn;
   if (!conn.get_connection_status()) return 1;
 
-  ServerConnection::listener(conn.get_server_fd());
+  int server_fd = conn.get_server_fd():
+  ServerConnection::listener(server_fd);
 
   return 0;
 }
