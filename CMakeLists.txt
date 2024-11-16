@@ -10,8 +10,8 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_package(asio CONFIG REQUIRED)
 
-target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/src)
 
 add_executable(server ${SOURCE_FILES})
 
