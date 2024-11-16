@@ -11,10 +11,11 @@ namespace Helper {
     }
 
     ProtocolIdentifier::ProtocolIdentifier(std::string buffer) :
-    protocol {}
+    protocol {},
+    cleaned_buffer {}
     {
         this->buffer = buffer;
-        rObject = new ReturnObject("\r\n", 0);
+        rObject = new ReturnObject("+\r\n", 0);
         identify_protocol();
 
         if (protocol.size()) {
@@ -36,90 +37,157 @@ namespace Helper {
         return protocol;
     }
 
-    bool ProtocolIdentifier::identify_protocol() {
+    size_t ProtocolIdentifier::searchProtocol(std::string search_word) {
 
-        // Convert both strings to lowercase
-        std::transform(buffer.begin(), buffer.end(), buffer.begin(), ::tolower);
-        std::string output {};
+        PRINT_WARNING(search_word);
+        PRINT_WARNING("In searchProtocol " + cleaned_buffer);
+        int index {};
+        index = cleaned_buffer.find(search_word);
 
-        if (identify_ping()) return true;
-        if (identify_echo()) return true;
+        PRINT_WARNING(std::to_string(index));
 
-        return false;
+        if (index != std::string::npos) protocol = search_word;
+        return index;
 
     }
 
-    bool ProtocolIdentifier::identify_ping() {
-
-        std::string search_word = "ping";
-
-        if (buffer.find(search_word) != std::string::npos) {
-            // ping found return simply response
-            rObject = new ReturnObject("+PONG\r\n", 0);
-            protocol = search_word;
-            return true;
-        }
-
-        return false;
-    }
-
-    bool ProtocolIdentifier::identify_echo() {
-
-        std::string search_word = "echo";
-
-        std::regex non_printable("[^\\x20-\\x7E]+");
+    std::string ProtocolIdentifier::getVariable(
+        size_t starts_at, char listenOnSymbol, char endsOnSymbol
+    ) {
         std::regex not_digit("[^0-9]");
+        bool listen = false;
 
-        // Replace non-printable characters with an empty string
-        std::string buffer_data = buffer;
-        std::string cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
+        std::string variable {};
 
-        // Output the result
-        PRINT_WARNING(cleaned_buffer);
+        auto rule = not_digit;
 
-        size_t index = cleaned_buffer.find(search_word);
-        std::string pre_echo;
+        bool cleanFrontDigits = false;
 
-        if (index != std::string::npos) {
-            index += 5; // Plus echo.size + $
+        for (size_t i = starts_at; i < cleaned_buffer.size(); i++) {
+            char current = cleaned_buffer[i];
 
-            bool listen = false;
-            for (size_t i = index; i < cleaned_buffer.size(); i++) {
-                char current = cleaned_buffer[i];
-
-                if (!listen && std::regex_match(std::string(1, current), not_digit)) {
-                    listen = true;
-                }
-
-                if (listen) {
-                    pre_echo += current;
+            if (!listen && current == listenOnSymbol) {
+                listen = true;
+                if (listenOnSymbol == '$') {
+                    cleanFrontDigits = true;
                     continue;
                 }
             }
 
-            //$3\r\nhey\r\n
-            std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
-            rObject = new ReturnObject(echo, 0);
-            protocol = search_word;
+            if (listen && cleanFrontDigits) {
+                if (!std::regex_match(std::string(1, current), not_digit)) continue;
+                cleanFrontDigits = false;
+            }
 
-            return true;
+            if (listen && current == endsOnSymbol) break;
+            if (listen) variable += current;
         }
 
-        return false;
+        return variable;
     }
 
-    std::string construct_protocol(size_t num_args, std::vector<std::pair<char, std::string>> args) {
+    bool ProtocolIdentifier::identify_protocol() {
+        std::regex non_printable("[^\\x20-\\x7E]+");
 
-        std::string protocol = "*" + std::to_string(num_args) + "\r\n$4\r\nping\r\n";
+        // Convert both strings to lowercase
+        std::string buffer_data = buffer;
 
-        for (std::pair<size_t, std::string> arg : args) {
+        std::transform(buffer_data.begin(), buffer_data.end(), buffer_data.begin(), ::tolower);
 
-            protocol += "\r\n$" + std::to_string(arg.first) + "\r\n" + arg.second;
+        // Replace non-printable characters with an empty string
+        cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
+
+        // Output the result
+        PRINT_WARNING(cleaned_buffer);
+
+        if (identifyPing()) return true;
+        if (identifyEcho()) return true;
+        if (identifySet()) return true;
+        if (identifyGet()) return true;
+
+        return false;
+
+    }
+
+    bool ProtocolIdentifier::identifyPing() {
+
+        size_t index = searchProtocol("ping");
+        if (index == std::string::npos) return false;
+
+        rObject = new ReturnObject("+PONG\r\n", 0);
+        return true;
+    }
+
+    bool ProtocolIdentifier::identifyEcho() {
+
+        size_t index = searchProtocol("echo");
+        if (index == std::string::npos) return false;
+
+        std::regex not_digit("[^0-9]");
+        index += 4; // Plus echo.size
+
+        std::string pre_echo = getVariable(index);
+        std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
+        rObject = new ReturnObject(echo, 0);
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::identifySet() {
+        // *3$3set$9pineapple$6banana
+        size_t index = searchProtocol("set");
+        if (index == std::string::npos) return false;
+
+        index += 3; // adding set
+
+        std::string key = getVariable(index);
+        std::string value = getVariable(index + key.size()); // Not correct the sum, but will work
+
+        Cache::DataManager cache;
+        cache.setValue(key, value);
+
+        rObject = new ReturnObject("+OK\r\n", 0);
+        return true;
+    }
+
+    bool ProtocolIdentifier::identifyGet() {
+        size_t index = searchProtocol("get");
+        if (index == std::string::npos) return false;
+
+        index += 3; // adding get
+
+        std::string key = getVariable(index);
+
+        PRINT_SUCCESS("key " + key);
+
+        Cache::DataManager cache;
+        std::optional<std::string> value = cache.getValue(key);
+
+        if (!value.has_value()) {
+            rObject = new ReturnObject("$-1\r\n", 0);
+            return false;
         }
 
-        protocol += "\r\n";
-        return protocol;
+        std::string response = constructProtocol({value.value()}, false);
+        PRINT_SUCCESS(response);
+        rObject = new ReturnObject(response, 0);
 
+        return true;
+    }
+
+    std::string ProtocolIdentifier::constructProtocol(std::vector<std::string> args, bool isArray) {
+
+        std::string protocol {};
+        if (isArray) {
+            std::string protocol = "*" + std::to_string(args.size());
+        }
+
+        for (std::string arg : args) {
+
+            protocol += "$" + std::to_string(arg.size()) + "\r\n" + arg + "\r\n";
+        }
+
+        return protocol;
     }
 
 }

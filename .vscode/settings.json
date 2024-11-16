@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "ios": "cpp",
-        "stdexcept": "cpp"
+        "stdexcept": "cpp",
+        "xhash": "cpp",
+        "xstring": "cpp"
     }
 }
