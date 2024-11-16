@@ -13,6 +13,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include <utils.h>
+
 namespace ServerConnection {
 
     void handle_connection(int client_fd);

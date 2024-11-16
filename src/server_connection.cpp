@@ -1,4 +1,4 @@
-#include "server_connection.h"
+#include <server_connection.h>
 
 namespace ServerConnection {
 
@@ -20,6 +20,9 @@ namespace ServerConnection {
     }
 
     void listener(int server_fd) {
+
+        PRINT_SUCCESS("Listener Started");
+
         std::vector<std::thread> threads {};
         while (true) {
             struct sockaddr_in client_addr {};
@@ -38,6 +41,8 @@ namespace ServerConnection {
         create_socket();
         check_address();
         check_connection();
+
+        PRINT_SUCCESS("Connection Stablished");
     }
 
     ConnectionManager::~ConnectionManager() {
