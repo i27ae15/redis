@@ -24,6 +24,7 @@ namespace ServerConnection {
 
         int get_server_fd();
         bool get_connection_status();
+        void listener();
 
         private:
 
@@ -38,8 +39,6 @@ namespace ServerConnection {
             void check_address();
             void check_connection();
             void handle_connection(int client_fd);
-            void listener();
-
     };
 
 }
