@@ -1,10 +1,12 @@
 #include <server_connection.h>
-
+#include <config_manager.h>
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
+
+  Remus::ConfigManager::initialize(argc, argv);
 
   ServerConnection::ConnectionManager conn;
   if (!conn.get_connection_status()) return 1;
