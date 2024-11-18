@@ -1,6 +1,7 @@
 #include <helper.h>
 #include <utils.h>
 #include <regex>
+#include <config_manager.h>
 
 namespace Helper {
 
@@ -113,10 +114,12 @@ namespace Helper {
         // Output the result
         // PRINT_WARNING(cleaned_buffer);
 
+        // Convert this to a map or router as in ConfigManager
         if (identifyPing()) return true;
         if (identifyEcho()) return true;
         if (identifySet()) return true;
         if (identifyGet()) return true;
+        if (identifyConfig()) return true;
 
         return false;
 
@@ -190,15 +193,41 @@ namespace Helper {
         return true;
     }
 
+    bool ProtocolIdentifier::identifyConfig() {
+        // client: $ redis-cli CONFIG GET dir
+        // identifyConfigGet : *3$6config$3get$3dir
+        size_t index {};
+
+        index = searchProtocol("config");
+        if (index == std::string::npos) return false;
+
+        index = searchProtocol("get");
+        if (index == std::string::npos) return false;
+
+        index += 3; // Adding get;
+        std::string var = getVariable(index);
+        std::string response {};
+        if (var == "dir") {
+            response = constructProtocol(
+            {"dir", Remus::ConfigManager::getInstance().getDirName()}, true);
+
+        } else if (var == "dbfilename") {
+            response = constructProtocol(
+            {"dbfilename", Remus::ConfigManager::getInstance().getFileName()}, true);
+        }
+
+        rObject = new ReturnObject(response, 0);
+        return true;
+    }
+
     std::string ProtocolIdentifier::constructProtocol(std::vector<std::string> args, bool isArray) {
 
         std::string protocol {};
         if (isArray) {
-            std::string protocol = "*" + std::to_string(args.size());
+            protocol += "*" + std::to_string(args.size()) + "\r\n";
         }
 
         for (std::string arg : args) {
-
             protocol += "$" + std::to_string(arg.size()) + "\r\n" + arg + "\r\n";
         }
 

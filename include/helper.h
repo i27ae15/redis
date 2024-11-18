@@ -45,6 +45,7 @@ namespace Helper {
         bool identifyEcho();
         bool identifySet();
         bool identifyGet();
+        bool identifyConfig();
 
         std::string constructProtocol(std::vector<std::string> args, bool isArray);
 
