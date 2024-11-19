@@ -76,6 +76,8 @@ namespace Remus {
     }
 
     void ConfigManager::dirManager(std::string dirName) {
+        this->dirName = dirName;
+        return;
 
         std::vector<std::string> dirs = splitString(dirName, '/');
 
@@ -104,6 +106,8 @@ namespace Remus {
 
     void ConfigManager::dbFileManager(std::string fileName) {
         std::string filePath = getDirName() + "/" + fileName;
+        this->fileName = fileName;
+        return;
 
         try {
             std::ofstream file(filePath);
