@@ -1,5 +1,6 @@
 #include <server_connection.h>
 #include <config_manager.h>
+#include <db/db_manager.h>
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
@@ -10,6 +11,9 @@ int main(int argc, char **argv) {
 
   ServerConnection::ConnectionManager conn;
   if (!conn.get_connection_status()) return 1;
+
+  RemusDB::DbManager dbManager;
+  dbManager.parseDatabase();
 
   int server_fd = conn.get_server_fd();
   ServerConnection::listener(server_fd);

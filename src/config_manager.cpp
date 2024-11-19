@@ -76,6 +76,8 @@ namespace Remus {
     }
 
     void ConfigManager::dirManager(std::string dirName) {
+        this->dirName = dirName;
+        return;
 
         std::vector<std::string> dirs = splitString(dirName, '/');
 
@@ -99,10 +101,11 @@ namespace Remus {
             }
         }
 
-        this->dirName = dirName;
     }
 
     void ConfigManager::dbFileManager(std::string fileName) {
+        this->fileName = fileName;
+        return;
         std::string filePath = getDirName() + "/" + fileName;
 
         try {
@@ -118,7 +121,6 @@ namespace Remus {
             PRINT_ERROR("Error creating file" + eWhat);
         }
 
-        this->fileName = fileName;
     }
 
 }
