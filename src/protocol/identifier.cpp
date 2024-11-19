@@ -9,8 +9,9 @@ namespace ProtocolID {
         &ProtocolIdentifier::identifyPing,
         &ProtocolIdentifier::identifyEcho,
         &ProtocolIdentifier::identifySet,
-        &ProtocolIdentifier::identifyGet,
         &ProtocolIdentifier::identifyConfig,
+        &ProtocolIdentifier::identifyGet,
+        &ProtocolIdentifier::identifyGetNoDB,
         &ProtocolIdentifier::identifyKeys
     },
     buffer{buffer}
@@ -156,6 +157,34 @@ namespace ProtocolID {
     }
 
     bool ProtocolIdentifier::identifyGet() {
+
+        // Check if we get a db file.
+        if (!RemusConfig::ConfigManager::getInstance().getDirName().size()) return false;
+
+        size_t index = searchProtocol("get");
+        if (index == std::string::npos) return false;
+
+        PRINT_WARNING(cleaned_buffer);
+
+        index += 3; // adding get
+        std::string key = getVariable(index);
+
+        RemusDB::DbManager dbManager;
+        RemusDB::DatabaseBlock db {};
+        db = dbManager.parseDatabase();
+
+        std::string response = ProtocolUtils::constructProtocol({db.keyValue[key].value}, false);
+        rObject = new ProtocolUtils::ReturnObject(response, 0);
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::identifyGetNoDB() {
+
+        // Check if we have a db file.
+        if (RemusConfig::ConfigManager::getInstance().getDirName().size() > 0) return false;
+
+        // For the first stage, legacy for reading from a db file.
         size_t index = searchProtocol("get");
         if (index == std::string::npos) return false;
 
@@ -192,11 +221,11 @@ namespace ProtocolID {
         std::string response {};
         if (var == "dir") {
             response = ProtocolUtils::constructProtocol(
-            {"dir", Remus::ConfigManager::getInstance().getDirName()}, true);
+            {"dir", RemusConfig::ConfigManager::getInstance().getDirName()}, true);
 
         } else if (var == "dbfilename") {
             response = ProtocolUtils::constructProtocol(
-            {"dbfilename", Remus::ConfigManager::getInstance().getFileName()}, true);
+            {"dbfilename", RemusConfig::ConfigManager::getInstance().getFileName()}, true);
         }
 
         rObject = new ProtocolUtils::ReturnObject(response, 0);

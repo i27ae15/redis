@@ -18,6 +18,7 @@
 #include <db/db_manager.h>
 #include <db/utils.h>
 #include <protocol/utils.h>
+#include <config_manager.h>
 
 namespace ProtocolID {
 
@@ -43,10 +44,11 @@ namespace ProtocolID {
 
         bool identifyProtocol();
 
-        bool (ProtocolIdentifier::*checkMethods[6])();
+        bool (ProtocolIdentifier::*checkMethods[7])();
         bool identifyPing();
         bool identifyEcho();
         bool identifySet();
+        bool identifyGetNoDB();
         bool identifyGet();
         bool identifyConfig();
         bool identifyKeys();

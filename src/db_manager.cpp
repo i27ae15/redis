@@ -3,8 +3,8 @@
 namespace RemusDB {
 
     DbManager::DbManager() {
-        dirName = Remus::ConfigManager::getInstance().getDirName();
-        fileName = Remus::ConfigManager::getInstance().getFileName();
+        dirName = RemusConfig::ConfigManager::getInstance().getDirName();
+        fileName = RemusConfig::ConfigManager::getInstance().getFileName();
         openFile();
         parseHeader();
     }
