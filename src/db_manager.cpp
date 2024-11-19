@@ -70,11 +70,16 @@ namespace RemusDB {
             throw std::runtime_error("Invalid string encoding");
         }
 
+        std::cout << "Decoded length: " << length << std::endl;
+
         // Read the raw string
-        std::string result(length, '\0');
+        std::string result(length, '\x00');
         if (!file.read(&result[0], length)) {
+            std::cerr << "Failed to read " << length << " bytes for string." << std::endl;
             throw std::runtime_error("Failed to read string");
         }
+
+        std::cout << "Read string: " << result << std::endl;
         return result;
 
     }
@@ -134,21 +139,21 @@ namespace RemusDB {
         // Read Key-Value Pairs
         for (size_t i = 0; i < totalKeys; ++i) {
             uint8_t valueType = readByte();
+
             std::string key = readString();
             std::string value = readString();
-
-            PRINT_COLOR(YELLOW, "Key: " + key + " | Value: " + value);
-
             RemusDB::InfoBlock kv{key, value};
 
-            // Check for expiry
-            uint8_t expireType = readByte();
-            if (expireType == 0xFC) {
-                kv.expireTime = readLittleEndian(8);
-                kv.hasExpire = true;
-            } else if (expireType == 0xFD) {
-                kv.expireTime = readLittleEndian(4);
-                kv.hasExpire = true;
+            if (file.peek() == 0xFC || file.peek() == 0xFD) {
+                uint8_t expireType = readByte();
+
+                if (expireType == 0xFC) {
+                    kv.expireTime = readLittleEndian(8);
+                    kv.hasExpire = true;
+                } else if (expireType == 0xFD) {
+                    kv.expireTime = readLittleEndian(4);
+                    kv.hasExpire = true;
+                }
             }
 
             db.keyValue[key] = kv;
