@@ -1,6 +1,6 @@
 #include <config_manager.h>
 
-namespace Remus {
+namespace RemusConfig {
 
     std::vector<std::string> splitString(const std::string input, char delimiter) {
         std::vector<std::string> splitedString {};

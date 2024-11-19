@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <fstream>
 
-namespace Remus {
+namespace RemusConfig {
 
     std::vector<std::string> splitString(const std::string input, char delimiter);
     class ConfigManager {
