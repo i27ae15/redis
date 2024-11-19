@@ -53,16 +53,17 @@ namespace RemusDB {
             // Special encoding
             uint8_t encodingType = sizeByte & 0x3F;
             if (encodingType == 0x00) {
-                return "";
-            } else if (encodingType == 0xC0) {
                 // 8-bit integer
-                return std::to_string(static_cast<int>(readByte()));
-            } else if (encodingType == 0xC1) {
+                int8_t val = static_cast<int8_t>(readByte());
+                return std::to_string(val);
+            } else if (encodingType == 0x01) {
                 // 16-bit integer
-                return std::to_string(static_cast<int>(readLittleEndian(2)));
-            } else if (encodingType == 0xC2) {
+                int16_t val = static_cast<int16_t>(readLittleEndian(2));
+                return std::to_string(val);
+            } else if (encodingType == 0x02) {
                 // 32-bit integer
-                return std::to_string(static_cast<int>(readLittleEndian(4)));
+                int32_t val = static_cast<int32_t>(readLittleEndian(4));
+                return std::to_string(val);
             } else {
                 throw std::runtime_error("Unsupported string encoding: " + std::to_string(encodingType));
             }
@@ -70,19 +71,18 @@ namespace RemusDB {
             throw std::runtime_error("Invalid string encoding");
         }
 
-        std::cout << "Decoded length: " << length << std::endl;
-
         // Read the raw string
-        std::string result(length, '\x00');
-        if (!file.read(&result[0], length)) {
-            std::cerr << "Failed to read " << length << " bytes for string." << std::endl;
-            throw std::runtime_error("Failed to read string");
+        if (length > 0) {
+            std::string result(length, '\0');
+            if (!file.read(&result[0], length)) {
+                throw std::runtime_error("Failed to read string");
+            }
+            return result;
+        } else {
+            return "";
         }
-
-        std::cout << "Read string: " << result << std::endl;
-        return result;
-
     }
+
 
     uint64_t DbManager::readLittleEndian(uint8_t size) {
         uint64_t result = 0;
@@ -111,11 +111,20 @@ namespace RemusDB {
         PRINT_SUCCESS("Redis version: " + header.substr(5, 4));
     }
 
+    uint64_t getCurrentUnixTimeInMs() {
+        auto now = std::chrono::system_clock::now();
+        auto duration = now.time_since_epoch();
+        return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+    }
+
+    uint64_t getCurrentUnixTimeInSeconds() {
+        return getCurrentUnixTimeInMs() / 1000;
+    }
 
     RemusDB::DatabaseBlock DbManager::parseDatabase() {
         RemusDB::DatabaseBlock db;
 
-        // Read RemusDB::DatabaseBlock Start Marker
+        // Read Database Start Marker
         uint8_t marker = readByte();
         while (marker != 0xFE) {
             if (marker == 0xFA) {
@@ -123,6 +132,8 @@ namespace RemusDB {
                 std::string metadataKey = readString();
                 std::string metadataValue = readString();
                 std::cout << "Skipping metadata: " << metadataKey << " = " << metadataValue << std::endl;
+            } else {
+                throw std::runtime_error("Unexpected marker: " + std::to_string(marker));
             }
             marker = readByte();
         }
@@ -138,25 +149,45 @@ namespace RemusDB {
 
         // Read Key-Value Pairs
         for (size_t i = 0; i < totalKeys; ++i) {
-            uint8_t valueType = readByte();
+            RemusDB::InfoBlock kv;
 
-            std::string key = readString();
-            std::string value = readString();
-            RemusDB::InfoBlock kv{key, value};
-
-            if (file.peek() == 0xFC || file.peek() == 0xFD) {
+            // Check for optional expire information
+            uint8_t peekByte = file.peek();
+            if (peekByte == 0xFC || peekByte == 0xFD) {
                 uint8_t expireType = readByte();
-
+                kv.hasExpire = true;
                 if (expireType == 0xFC) {
                     kv.expireTime = readLittleEndian(8);
-                    kv.hasExpire = true;
+                    kv.expireTimeInMs = true;
                 } else if (expireType == 0xFD) {
                     kv.expireTime = readLittleEndian(4);
-                    kv.hasExpire = true;
+                    kv.expireTimeInMs = false;
                 }
             }
 
-            db.keyValue[key] = kv;
+            // Determine if the key has expired
+            if (kv.hasExpire) {
+                uint64_t currentTime;
+                if (kv.expireTimeInMs) {
+                    currentTime = getCurrentUnixTimeInMs();
+                } else {
+                    currentTime = getCurrentUnixTimeInSeconds();
+                }
+
+                if (kv.expireTime <= currentTime) {
+                    kv.expired = true;
+                }
+            }
+
+
+            // Read Value Type
+            uint8_t valueType = readByte();
+
+            // Read Key and Value
+            kv.key = readString();
+            kv.value = readString();
+
+            db.keyValue[kv.key] = kv;
         }
 
         return db;

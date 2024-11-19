@@ -173,8 +173,14 @@ namespace ProtocolID {
         RemusDB::DatabaseBlock db {};
         db = dbManager.parseDatabase();
 
-        std::string response = ProtocolUtils::constructProtocol({db.keyValue[key].value}, false);
-        rObject = new ProtocolUtils::ReturnObject(response, 0);
+        if (db.keyValue[key].expired) {
+            PRINT_SUCCESS("This shit expird");
+            rObject = new ProtocolUtils::ReturnObject("$-1\r\n", 0);
+        } else {
+            std::string response = ProtocolUtils::constructProtocol({db.keyValue[key].value}, false);
+            rObject = new ProtocolUtils::ReturnObject(response, 0);
+
+        }
 
         return true;
     }
