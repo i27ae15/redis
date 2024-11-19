@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 
-  Remus::ConfigManager::initialize(argc, argv);
+  RemusConfig::ConfigManager::initialize(argc, argv);
 
   ServerConnection::ConnectionManager conn;
   if (!conn.getConnectionStatus()) return 1;
