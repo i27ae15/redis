@@ -12,7 +12,8 @@ namespace ProtocolID {
         &ProtocolIdentifier::identifyConfig,
         &ProtocolIdentifier::identifyGet,
         &ProtocolIdentifier::identifyGetNoDB,
-        &ProtocolIdentifier::identifyKeys
+        &ProtocolIdentifier::identifyKeys,
+        &ProtocolIdentifier::identifyInfo
     },
     buffer{buffer}
     {
@@ -261,6 +262,17 @@ namespace ProtocolID {
         }
 
         std::string response = ProtocolUtils::constructProtocol(dbKeys, true);
+        rObject = new ProtocolUtils::ReturnObject(response, 0);
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::identifyInfo() {
+
+        size_t index = searchProtocol("info");
+        if (index == std::string::npos) return false;
+
+        std::string response = ProtocolUtils::constructProtocol({"role:master"}, false);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;

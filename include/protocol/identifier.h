@@ -44,7 +44,7 @@ namespace ProtocolID {
 
         bool identifyProtocol();
 
-        bool (ProtocolIdentifier::*checkMethods[7])();
+        bool (ProtocolIdentifier::*checkMethods[8])();
         bool identifyPing();
         bool identifyEcho();
         bool identifySet();
@@ -52,6 +52,7 @@ namespace ProtocolID {
         bool identifyGet();
         bool identifyConfig();
         bool identifyKeys();
+        bool identifyInfo();
 
         size_t searchProtocol(std::string search_word);
         std::string getVariable(
