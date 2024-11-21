@@ -13,12 +13,11 @@
 #include <cache.h>
 #include <utils.h>
 #include <regex>
-#include <config_manager.h>
 
-#include <db/db_manager.h>
 #include <db/utils.h>
 #include <protocol/utils.h>
-#include <config_manager.h>
+#include <server_connection.h>
+
 
 namespace ProtocolID {
 
@@ -26,23 +25,23 @@ namespace ProtocolID {
 
         public:
 
-        ProtocolIdentifier(std::string buffer);
+        ProtocolIdentifier(RemusConn::ConnectionManager* conn);
         ~ProtocolIdentifier();
 
         ProtocolUtils::ReturnObject* getRObject();
         std::string getProtocol();
+        bool identifyProtocol(const std::string& buffer);
 
         private:
 
+        RemusConn::ConnectionManager* conn;
         ProtocolUtils::ReturnObject* rObject;
+
         std::string buffer;
         std::string protocol;
         std::string cleaned_buffer;
 
         std::pair<bool, size_t> getExpireTime();
-
-
-        bool identifyProtocol();
 
         bool (ProtocolIdentifier::*checkMethods[8])();
         bool identifyPing();

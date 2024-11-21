@@ -15,9 +15,8 @@
 #include <netdb.h>
 
 #include <utils.h>
-#include <config_manager.h>
 
-namespace ServerConnection {
+namespace RemusConn {
 
     void handle_connection(int clientFD);
     void listener(int serverFD);
@@ -29,12 +28,21 @@ namespace ServerConnection {
         int getServerFD();
         bool getConnectionStatus();
 
-        ConnectionManager(RemusConfig::ConfigManager* config);
+        // Getters
+        std::string getDirName();
+        std::string getFileName();
+        int getPort();
+
+        ConnectionManager(int port = 6379, std::string dirName = "", std::string fileName = "");
         ~ConnectionManager();
 
         private:
 
-            RemusConfig::ConfigManager* config;
+            std::string dirName;
+            std::string fileName;
+            std::string role;
+
+            int port;
 
             int serverFD;
             bool connectionStatus;

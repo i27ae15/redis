@@ -8,18 +8,16 @@
 #include <filesystem>
 #include <fstream>
 
+// Deprecated
+
 namespace RemusConfig {
 
     std::vector<std::string> splitString(const std::string input, char delimiter);
     class ConfigManager {
 
         public:
-        ConfigManager(const ConfigManager&) = delete;
-        ConfigManager& operator=(const ConfigManager&) = delete;
 
-        static ConfigManager& getInstance();
-        static void initialize(int argc, char** argv);
-
+        ConfigManager(int argc, char** argv);
         ~ConfigManager();
 
         // Getters
@@ -29,11 +27,9 @@ namespace RemusConfig {
 
         private:
 
-        ConfigManager(int argc, char** argv);
-
-        static ConfigManager* instance;
-        static std::string dirName;
-        static std::string fileName;
+        std::string dirName;
+        std::string fileName;
+        std::string role;
 
         int port;
 

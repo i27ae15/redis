@@ -2,9 +2,7 @@
 
 namespace RemusDB {
 
-    DbManager::DbManager() {
-        dirName = RemusConfig::ConfigManager::getInstance().getDirName();
-        fileName = RemusConfig::ConfigManager::getInstance().getFileName();
+    DbManager::DbManager(RemusConfig::ConfigManager* conn) : conn {conn} {
         openFile();
         parseHeader();
     }
@@ -13,8 +11,8 @@ namespace RemusDB {
         if (file.is_open()) file.close();
     }
 
-    std::string DbManager::getDirName() {return dirName;}
-    std::string DbManager::getFileName() {return fileName;}
+    std::string DbManager::getDirName() {return conn->getDirName();}
+    std::string DbManager::getFileName() {return conn->getFileName();}
 
     void DbManager::openFile() {
         std::string filePath = getDirName() + "/" + getFileName();

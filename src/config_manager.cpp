@@ -1,5 +1,7 @@
 #include <config_manager.h>
 
+// Derprecated
+
 namespace RemusConfig {
 
     std::vector<std::string> splitString(const std::string input, char delimiter) {
@@ -13,28 +15,8 @@ namespace RemusConfig {
         return splitedString;
     }
 
-
-    ConfigManager* ConfigManager::instance = nullptr;
-
-    std::string ConfigManager::dirName {};
-    std::string ConfigManager::fileName {};
-
-    ConfigManager& ConfigManager::getInstance() {
-        if (!instance) {
-            throw std::runtime_error("Class has not been initialized, you musdt call ConfigManager::initialize(...) firste!");
-        }
-        return *instance;
-    }
-
-    void ConfigManager::initialize(int argc, char** argv) {
-        if (instance) {
-            throw std::runtime_error("Class is already initialzed, call ConfigManager::getInstance to get an instance of this class!");
-        }
-        instance = new ConfigManager(argc, argv);
-    }
-
     ConfigManager::ConfigManager(int argc, char** argv) :
-    argc{argc}, argv{argv}, arguments {}, port {6379}
+    argc{argc}, argv{argv}, arguments{}, dirName{}, fileName{}, port {6379}
     {
 
         // Initialize method map;

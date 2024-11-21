@@ -7,9 +7,10 @@
 #include <stdexcept>
 #include <map>
 
-#include <config_manager.h>
 #include <utils.h>
 #include <db/utils.h>
+
+#include <server_connection.h>
 
 namespace RemusDB {
 
@@ -17,17 +18,16 @@ namespace RemusDB {
 
         public:
 
-        DbManager();
+        DbManager(RemusConn::ConnectionManager* conn);
         ~DbManager();
         void parseHeader();
         DatabaseBlock parseDatabase();
 
         private:
 
-        std::ifstream file;
+        RemusConn::ConnectionManager* conn;
 
-        std::string dirName;
-        std::string fileName;
+        std::ifstream file;
 
         // Methods
         uint8_t readByte();

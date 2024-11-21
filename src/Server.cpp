@@ -1,5 +1,4 @@
 #include <server_connection.h>
-#include <config_manager.h>
 #include <db/db_manager.h>
 
 int main(int argc, char **argv) {

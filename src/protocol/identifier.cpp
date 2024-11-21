@@ -2,7 +2,8 @@
 
 namespace ProtocolID {
 
-    ProtocolIdentifier::ProtocolIdentifier(std::string buffer) :
+    ProtocolIdentifier::ProtocolIdentifier(RemusConn::ConnectionManager *conn) :
+    conn {conn},
     protocol {},
     cleaned_buffer {},
     checkMethods {
@@ -15,13 +16,8 @@ namespace ProtocolID {
         &ProtocolIdentifier::identifyKeys,
         &ProtocolIdentifier::identifyInfo
     },
-    buffer{buffer}
-    {
-        rObject = new ProtocolUtils::ReturnObject("+\r\n", 0);
-        identifyProtocol();
-
-        if (!protocol.size()) PRINT_ERROR("Protocol not idenfied");
-    }
+    rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
+    {}
 
     ProtocolIdentifier::~ProtocolIdentifier() {
         delete rObject;
@@ -37,10 +33,11 @@ namespace ProtocolID {
         return protocol;
     }
 
-    bool ProtocolIdentifier::identifyProtocol() {
+    bool ProtocolIdentifier::identifyProtocol(const std::string& buffer) {
         std::regex non_printable("[^\\x20-\\x7E]+");
 
         // Convert both strings to lowercase
+        this->buffer = buffer;
         std::string buffer_data = buffer;
 
         std::transform(buffer_data.begin(), buffer_data.end(), buffer_data.begin(), ::tolower);
@@ -50,6 +47,8 @@ namespace ProtocolID {
         for (auto method : checkMethods) {
             if ((this->*method)()) return true;
         }
+
+        PRINT_ERROR("Protocol could not be identified");
         return false;
 
     }
@@ -160,7 +159,7 @@ namespace ProtocolID {
     bool ProtocolIdentifier::identifyGet() {
 
         // Check if we get a db file.
-        if (!RemusConfig::ConfigManager::getInstance().getDirName().size()) return false;
+        if (!conn->getDirName().size()) return false;
 
         size_t index = searchProtocol("get");
         if (index == std::string::npos) return false;
@@ -189,7 +188,7 @@ namespace ProtocolID {
     bool ProtocolIdentifier::identifyGetNoDB() {
 
         // Check if we have a db file.
-        if (RemusConfig::ConfigManager::getInstance().getDirName().size() > 0) return false;
+        if (conn->getDirName().size() > 0) return false;
 
         // For the first stage, legacy for reading from a db file.
         size_t index = searchProtocol("get");
@@ -228,11 +227,11 @@ namespace ProtocolID {
         std::string response {};
         if (var == "dir") {
             response = ProtocolUtils::constructProtocol(
-            {"dir", RemusConfig::ConfigManager::getInstance().getDirName()}, true);
+            {"dir", conn->getDirName()}, true);
 
         } else if (var == "dbfilename") {
             response = ProtocolUtils::constructProtocol(
-            {"dbfilename", RemusConfig::ConfigManager::getInstance().getFileName()}, true);
+            {"dbfilename", conn->getFileName()}, true);
         }
 
         rObject = new ProtocolUtils::ReturnObject(response, 0);

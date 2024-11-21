@@ -1,7 +1,50 @@
 #include <server_connection.h>
 #include <protocol/identifier.h>
 
-namespace ServerConnection {
+namespace RemusConn {
+
+    // ./your_program.sh --port <PORT> --replicaof "<MASTER_HOST> <MASTER_PORT>"
+
+    void ConfigManager::methodRouter(int argc, char** argv) {
+
+        int port = 6379;
+        std::dirName {};
+        std::fileName {};
+        std::role {};
+
+        std::unordered_map<std::string, std::string> flags {};
+
+        flags["--dir"] = "";
+        flags["--dbfilename"] = "";
+        flags["--port"] = "";
+
+        std::string masterHost {};
+        std::string masterPort {};
+
+        std::vector<std::string> flags {"--dir", "--dbfilename", "--port", "--replicaof"}
+        for (int i = 1; i < argc; ++i) {
+
+            std::string key = argv[i];
+            if (key.size() < 2 || ( key[0] != '-' && key[1] != '-')) continue;
+
+            std::string input = argv[i+1];
+            if (flags.find(key) != flags.end()) {
+
+                if (key == "replicaof") {
+                    flags["role"] = "slave";
+
+                    masterHost = input;
+                    masterPort = argv[i+2];
+                    continue;
+                }
+
+                flags[key] = input;
+            } else {
+                PRINT_ERROR("No method found for key: " + key);
+            }
+        }
+
+    }
 
     void handle_connection(int clientFD) {
 
@@ -35,10 +78,12 @@ namespace ServerConnection {
         close(serverFD);
     }
 
-    ConnectionManager::ConnectionManager(RemusConfig::ConfigManager* config) :
+    ConnectionManager::ConnectionManager(int port, std::string dirName, std::string fileName) :
     serverFD {},
     connectionStatus {true},
-    config {config}
+    port {port},
+    dirName {dirName},
+    fileName {fileName}
     {
         createSocket();
         checkAddress();
@@ -56,6 +101,12 @@ namespace ServerConnection {
     int ConnectionManager::getServerFD() {return serverFD;}
 
     bool ConnectionManager::getConnectionStatus() {return connectionStatus;}
+
+    std::string ConnectionManager::getDirName() {return dirName;}
+
+    std::string ConnectionManager::getFileName() {return fileName;}
+
+    int ConnectionManager::getPort() {return port;}
 
     // METHODS
 
@@ -84,11 +135,11 @@ namespace ServerConnection {
         struct sockaddr_in server_addr;
         server_addr.sin_family = AF_INET;
         server_addr.sin_addr.s_addr = INADDR_ANY;
-        server_addr.sin_port = htons(config->getPort());
+        server_addr.sin_port = htons(getPort());
 
         if (bind(serverFD, (struct sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
             connectionStatus = false;
-            PRINT_ERROR("Failed to bind to port " + config->getPort());
+            PRINT_ERROR("Failed to bind to port " + getPort());
             return;
         }
     }
