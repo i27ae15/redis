@@ -25,6 +25,7 @@ namespace RemusConfig {
         // Getters
         std::string getDirName();
         std::string getFileName();
+        int getPort();
 
         private:
 
@@ -34,6 +35,8 @@ namespace RemusConfig {
         static std::string dirName;
         static std::string fileName;
 
+        int port;
+
         std::vector<std::pair<std::string, std::string>> arguments;
         int argc;
         char** argv;
@@ -41,7 +44,9 @@ namespace RemusConfig {
         std::unordered_map<std::string, std::function<void(const std::string&)>> methodMap;
         // Methods to react to the parameters passed
         void methodRouter(int argc, char** argv);
+
         void dirManager(std::string dirName);
         void dbFileManager(std::string fileName);
+        void portManager(std::string port);
     };
 }

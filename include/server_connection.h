@@ -15,6 +15,7 @@
 #include <netdb.h>
 
 #include <utils.h>
+#include <config_manager.h>
 
 namespace ServerConnection {
 
@@ -28,10 +29,12 @@ namespace ServerConnection {
         int getServerFD();
         bool getConnectionStatus();
 
-        ConnectionManager();
+        ConnectionManager(RemusConfig::ConfigManager* config);
         ~ConnectionManager();
 
         private:
+
+            RemusConfig::ConfigManager* config;
 
             int serverFD;
             bool connectionStatus;

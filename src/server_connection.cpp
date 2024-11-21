@@ -35,9 +35,10 @@ namespace ServerConnection {
         close(serverFD);
     }
 
-    ConnectionManager::ConnectionManager() :
+    ConnectionManager::ConnectionManager(RemusConfig::ConfigManager* config) :
     serverFD {},
-    connectionStatus {true}
+    connectionStatus {true},
+    config {config}
     {
         createSocket();
         checkAddress();
@@ -83,11 +84,11 @@ namespace ServerConnection {
         struct sockaddr_in server_addr;
         server_addr.sin_family = AF_INET;
         server_addr.sin_addr.s_addr = INADDR_ANY;
-        server_addr.sin_port = htons(6379);
+        server_addr.sin_port = htons(config->getPort());
 
         if (bind(serverFD, (struct sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
             connectionStatus = false;
-            PRINT_ERROR("Failed to bind to port 6379");
+            PRINT_ERROR("Failed to bind to port " + config->getPort());
             return;
         }
     }

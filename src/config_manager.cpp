@@ -34,12 +34,13 @@ namespace RemusConfig {
     }
 
     ConfigManager::ConfigManager(int argc, char** argv) :
-    argc{argc}, argv{argv}, arguments {}
+    argc{argc}, argv{argv}, arguments {}, port {6379}
     {
 
         // Initialize method map;
         methodMap["--dir"] = [this](const std::string& input) {this->dirManager(input);};
         methodMap["--dbfilename"] = [this](const std::string& input) {this->dbFileManager(input);};
+        methodMap["--port"] = [this](const std::string& input) {this->portManager(input);};
 
         methodRouter(argc, argv);
     }
@@ -54,6 +55,10 @@ namespace RemusConfig {
 
     std::string ConfigManager::getFileName() {
         return fileName;
+    }
+
+    int ConfigManager::getPort() {
+        return port;
     }
 
     void ConfigManager::methodRouter(int argc, char** argv) {
@@ -107,8 +112,6 @@ namespace RemusConfig {
         this->fileName = fileName;
         return;
         std::string filePath = getDirName() + "/" + fileName;
-        this->fileName = fileName;
-        return;
 
         try {
             std::ofstream file(filePath);
@@ -123,6 +126,10 @@ namespace RemusConfig {
             PRINT_ERROR("Error creating file" + eWhat);
         }
 
+    }
+
+    void ConfigManager::portManager(std::string port) {
+        this->port = std::stoi(port);
     }
 
 }

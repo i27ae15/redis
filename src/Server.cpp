@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 
   RemusConfig::ConfigManager::initialize(argc, argv);
 
-  ServerConnection::ConnectionManager conn;
+  ServerConnection::ConnectionManager conn(&RemusConfig::ConfigManager::getInstance());
   if (!conn.getConnectionStatus()) return 1;
 
   int server_fd = conn.getServerFD();
