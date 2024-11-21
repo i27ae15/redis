@@ -1,36 +1,34 @@
-#include <helper.h>
-#include <utils.h>
-#include <regex>
-#include <config_manager.h>
+#include <protocol/identifier.h>
 
-namespace Helper {
-
-    ReturnObject::ReturnObject(std::string return_value, int behavior) {
-        this->return_value = return_value;
-        this->behavior = behavior;
-        this->bytes = return_value.size();
-    }
+namespace ProtocolID {
 
     ProtocolIdentifier::ProtocolIdentifier(std::string buffer) :
     protocol {},
-    cleaned_buffer {}
+    cleaned_buffer {},
+    checkMethods {
+        &ProtocolIdentifier::identifyPing,
+        &ProtocolIdentifier::identifyEcho,
+        &ProtocolIdentifier::identifySet,
+        &ProtocolIdentifier::identifyConfig,
+        &ProtocolIdentifier::identifyGet,
+        &ProtocolIdentifier::identifyGetNoDB,
+        &ProtocolIdentifier::identifyKeys
+    },
+    buffer{buffer}
     {
-        this->buffer = buffer;
-        rObject = new ReturnObject("+\r\n", 0);
-        identify_protocol();
+        rObject = new ProtocolUtils::ReturnObject("+\r\n", 0);
+        identifyProtocol();
 
-        if (protocol.size()) {
-            // PRINT_SUCCESS("Protocol identified as " + protocol);
-        } else {
-            // PRINT_ERROR("Protocol not identified");
-        }
+        if (!protocol.size()) PRINT_ERROR("Protocol not idenfied");
     }
 
     ProtocolIdentifier::~ProtocolIdentifier() {
         delete rObject;
     }
 
-    ReturnObject* ProtocolIdentifier::getRObject() {
+    // GETTERS
+
+    ProtocolUtils::ReturnObject* ProtocolIdentifier::getRObject() {
         return rObject;
     }
 
@@ -38,14 +36,27 @@ namespace Helper {
         return protocol;
     }
 
+    bool ProtocolIdentifier::identifyProtocol() {
+        std::regex non_printable("[^\\x20-\\x7E]+");
+
+        // Convert both strings to lowercase
+        std::string buffer_data = buffer;
+
+        std::transform(buffer_data.begin(), buffer_data.end(), buffer_data.begin(), ::tolower);
+
+        // Replace non-printable characters with an empty string
+        cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
+        for (auto method : checkMethods) {
+            if ((this->*method)()) return true;
+        }
+        return false;
+
+    }
+
     size_t ProtocolIdentifier::searchProtocol(std::string search_word) {
 
-        // PRINT_WARNING(search_word);
-        // PRINT_WARNING("In searchProtocol " + cleaned_buffer);
-        int index {};
+        size_t index {};
         index = cleaned_buffer.find(search_word);
-
-        // PRINT_WARNING(std::to_string(index));
 
         if (index != std::string::npos) protocol = search_word;
         return index;
@@ -87,10 +98,11 @@ namespace Helper {
     }
 
     std::pair<bool, size_t> ProtocolIdentifier::getExpireTime() {
+        // Example
+        // *5$3set$6orange$9blueberry$2px$3100
         size_t index = searchProtocol("px");
         if (index == std::string::npos) return {false, 0};
 
-        // In searchProtocol *5$3set$6orange$9blueberry$2px$3100
         index += 4; // px.size + $n.size
         std::string nStr {};
         for (size_t i = index; i < cleaned_buffer.size(); i++) {
@@ -100,37 +112,12 @@ namespace Helper {
         return {true, std::stoi(nStr)};
     }
 
-    bool ProtocolIdentifier::identify_protocol() {
-        std::regex non_printable("[^\\x20-\\x7E]+");
-
-        // Convert both strings to lowercase
-        std::string buffer_data = buffer;
-
-        std::transform(buffer_data.begin(), buffer_data.end(), buffer_data.begin(), ::tolower);
-
-        // Replace non-printable characters with an empty string
-        cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
-
-        // Output the result
-        // PRINT_WARNING(cleaned_buffer);
-
-        // Convert this to a map or router as in ConfigManager
-        if (identifyPing()) return true;
-        if (identifyEcho()) return true;
-        if (identifySet()) return true;
-        if (identifyGet()) return true;
-        if (identifyConfig()) return true;
-
-        return false;
-
-    }
-
     bool ProtocolIdentifier::identifyPing() {
 
         size_t index = searchProtocol("ping");
         if (index == std::string::npos) return false;
 
-        rObject = new ReturnObject("+PONG\r\n", 0);
+        rObject = new ProtocolUtils::ReturnObject("+PONG\r\n", 0);
         return true;
     }
 
@@ -144,7 +131,7 @@ namespace Helper {
 
         std::string pre_echo = getVariable(index);
         std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
-        rObject = new ReturnObject(echo, 0);
+        rObject = new ProtocolUtils::ReturnObject(echo, 0);
 
         return true;
     }
@@ -165,30 +152,61 @@ namespace Helper {
         Cache::DataManager cache;
         cache.setValue(key, value, expireTime.first, expireTime.second);
 
-        rObject = new ReturnObject("+OK\r\n", 0);
+        rObject = new ProtocolUtils::ReturnObject("+OK\r\n", 0);
         return true;
     }
 
     bool ProtocolIdentifier::identifyGet() {
+
+        // Check if we get a db file.
+        if (!RemusConfig::ConfigManager::getInstance().getDirName().size()) return false;
+
+        size_t index = searchProtocol("get");
+        if (index == std::string::npos) return false;
+
+        PRINT_WARNING(cleaned_buffer);
+
+        index += 3; // adding get
+        std::string key = getVariable(index);
+
+        RemusDB::DbManager dbManager;
+        RemusDB::DatabaseBlock db {};
+        db = dbManager.parseDatabase();
+
+        if (db.keyValue[key].expired) {
+            PRINT_SUCCESS("This shit expird");
+            rObject = new ProtocolUtils::ReturnObject("$-1\r\n", 0);
+        } else {
+            std::string response = ProtocolUtils::constructProtocol({db.keyValue[key].value}, false);
+            rObject = new ProtocolUtils::ReturnObject(response, 0);
+
+        }
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::identifyGetNoDB() {
+
+        // Check if we have a db file.
+        if (RemusConfig::ConfigManager::getInstance().getDirName().size() > 0) return false;
+
+        // For the first stage, legacy for reading from a db file.
         size_t index = searchProtocol("get");
         if (index == std::string::npos) return false;
 
         index += 3; // adding get
-
         std::string key = getVariable(index);
-
-        // PRINT_SUCCESS("key " + key);
 
         Cache::DataManager cache;
         std::optional<std::string> value = cache.getValue(key);
 
         if (!value.has_value()) {
-            rObject = new ReturnObject("$-1\r\n", 0);
+            rObject = new ProtocolUtils::ReturnObject("$-1\r\n", 0);
             return false;
         }
 
-        std::string response = constructProtocol({value.value()}, false);
-        rObject = new ReturnObject(response, 0);
+        std::string response = ProtocolUtils::constructProtocol({value.value()}, false);
+        rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
     }
@@ -208,30 +226,44 @@ namespace Helper {
         std::string var = getVariable(index);
         std::string response {};
         if (var == "dir") {
-            response = constructProtocol(
-            {"dir", Remus::ConfigManager::getInstance().getDirName()}, true);
+            response = ProtocolUtils::constructProtocol(
+            {"dir", RemusConfig::ConfigManager::getInstance().getDirName()}, true);
 
         } else if (var == "dbfilename") {
-            response = constructProtocol(
-            {"dbfilename", Remus::ConfigManager::getInstance().getFileName()}, true);
+            response = ProtocolUtils::constructProtocol(
+            {"dbfilename", RemusConfig::ConfigManager::getInstance().getFileName()}, true);
         }
 
-        rObject = new ReturnObject(response, 0);
+        rObject = new ProtocolUtils::ReturnObject(response, 0);
         return true;
     }
 
-    std::string ProtocolIdentifier::constructProtocol(std::vector<std::string> args, bool isArray) {
+    bool ProtocolIdentifier::identifyKeys() {
+        // Example of key
+        // *2$4keys$1*
 
-        std::string protocol {};
-        if (isArray) {
-            protocol += "*" + std::to_string(args.size()) + "\r\n";
+        size_t index = searchProtocol("keys");
+        if (index == std::string::npos) return false;
+
+        std::string var = getVariable(index);
+        std::vector<std::string> dbKeys {};
+
+        if (var != "*") return false;
+
+        RemusDB::DbManager dbManager;
+        RemusDB::DatabaseBlock db {};
+
+        // returning all the keys
+        db = dbManager.parseDatabase();
+        std::map<std::string, RemusDB::InfoBlock>& keys = db.keyValue;
+        for (std::map<std::string, RemusDB::InfoBlock>::iterator it = keys.begin(); it != keys.end(); ++it) {
+            dbKeys.push_back(it->first);
         }
 
-        for (std::string arg : args) {
-            protocol += "$" + std::to_string(arg.size()) + "\r\n" + arg + "\r\n";
-        }
+        std::string response = ProtocolUtils::constructProtocol(dbKeys, true);
+        rObject = new ProtocolUtils::ReturnObject(response, 0);
 
-        return protocol;
+        return true;
     }
 
 }

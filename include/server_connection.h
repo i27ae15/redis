@@ -18,27 +18,27 @@
 
 namespace ServerConnection {
 
-    void handle_connection(int client_fd);
-    void listener(int server_fd);
+    void handle_connection(int clientFD);
+    void listener(int serverFD);
 
     class ConnectionManager {
 
         public:
 
-        int get_server_fd();
-        bool get_connection_status();
+        int getServerFD();
+        bool getConnectionStatus();
 
         ConnectionManager();
         ~ConnectionManager();
 
         private:
 
-            int server_fd;
-            bool connection_status;
+            int serverFD;
+            bool connectionStatus;
 
-            void create_socket();
-            void check_address();
-            void check_connection();
+            void createSocket();
+            void checkAddress();
+            void checkConnection();
     };
 
 

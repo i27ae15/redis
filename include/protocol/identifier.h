@@ -1,4 +1,4 @@
-#pragma
+#pragma once
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -8,17 +8,19 @@
 #include <vector>
 #include <atomic>
 #include <algorithm>
+#include <functional>
+
 #include <cache.h>
+#include <utils.h>
+#include <regex>
+#include <config_manager.h>
 
-namespace Helper {
+#include <db/db_manager.h>
+#include <db/utils.h>
+#include <protocol/utils.h>
+#include <config_manager.h>
 
-    struct ReturnObject {
-        std::string return_value;
-        size_t bytes;
-        int behavior;
-
-        ReturnObject(std::string return_value, int behavior);
-    };
+namespace ProtocolID {
 
     class ProtocolIdentifier {
 
@@ -27,27 +29,29 @@ namespace Helper {
         ProtocolIdentifier(std::string buffer);
         ~ProtocolIdentifier();
 
-
-        ReturnObject* getRObject();
+        ProtocolUtils::ReturnObject* getRObject();
         std::string getProtocol();
 
         private:
 
-        ReturnObject* rObject;
+        ProtocolUtils::ReturnObject* rObject;
         std::string buffer;
         std::string protocol;
         std::string cleaned_buffer;
 
         std::pair<bool, size_t> getExpireTime();
 
-        bool identify_protocol();
+
+        bool identifyProtocol();
+
+        bool (ProtocolIdentifier::*checkMethods[7])();
         bool identifyPing();
         bool identifyEcho();
         bool identifySet();
+        bool identifyGetNoDB();
         bool identifyGet();
         bool identifyConfig();
-
-        std::string constructProtocol(std::vector<std::string> args, bool isArray);
+        bool identifyKeys();
 
         size_t searchProtocol(std::string search_word);
         std::string getVariable(

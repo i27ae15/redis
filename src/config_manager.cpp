@@ -1,6 +1,6 @@
 #include <config_manager.h>
 
-namespace Remus {
+namespace RemusConfig {
 
     std::vector<std::string> splitString(const std::string input, char delimiter) {
         std::vector<std::string> splitedString {};
@@ -107,6 +107,8 @@ namespace Remus {
         this->fileName = fileName;
         return;
         std::string filePath = getDirName() + "/" + fileName;
+        this->fileName = fileName;
+        return;
 
         try {
             std::ofstream file(filePath);

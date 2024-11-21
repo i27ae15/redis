@@ -7,15 +7,12 @@ int main(int argc, char **argv) {
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 
-  Remus::ConfigManager::initialize(argc, argv);
+  RemusConfig::ConfigManager::initialize(argc, argv);
 
   ServerConnection::ConnectionManager conn;
-  if (!conn.get_connection_status()) return 1;
+  if (!conn.getConnectionStatus()) return 1;
 
-  RemusDB::DbManager dbManager;
-  dbManager.parseDatabase();
-
-  int server_fd = conn.get_server_fd();
+  int server_fd = conn.getServerFD();
   ServerConnection::listener(server_fd);
 
   return 0;

@@ -9,6 +9,8 @@ namespace RemusDB {
         std::string value;
         uint64_t expireTime = 0;
         bool hasExpire = false;
+        bool expireTimeInMs = false;
+        bool expired = false;
     };
 
     struct DatabaseBlock {

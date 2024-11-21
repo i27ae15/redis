@@ -1,83 +1,82 @@
 #include <server_connection.h>
-#include <helper.h>
+#include <protocol/identifier.h>
 
 namespace ServerConnection {
 
-    void handle_connection(int client_fd) {
+    void handle_connection(int clientFD) {
 
         char buffer[1024];
         while (true) {
-            size_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+            size_t bytes_received = recv(clientFD, buffer, sizeof(buffer) - 1, 0);
             if (bytes_received <= 0) break;
 
             buffer[bytes_received] = '\0';
 
-            Helper::ProtocolIdentifier protocol_identifer(buffer);
+            ProtocolID::ProtocolIdentifier protocolId(buffer);
 
-            Helper::ReturnObject* rObject = protocol_identifer.getRObject();
-            send(client_fd, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
+            ProtocolUtils::ReturnObject* rObject = protocolId.getRObject();
+            send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
         }
-        close(client_fd);
+        close(clientFD);
     }
 
-    void listener(int server_fd) {
+    void listener(int serverFD) {
 
         PRINT_SUCCESS("Listener Started");
 
         std::vector<std::thread> threads {};
         while (true) {
-            struct sockaddr_in client_addr {};
-            int client_addr_len = sizeof(client_addr);
-            int client_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_addr_len);
+            struct sockaddr_in clientAddr {};
+            int clientAddrLen = sizeof(clientAddr);
+            int clientFD = accept(serverFD, (struct sockaddr *) &clientAddr, (socklen_t *) &clientAddrLen);
 
-            threads.emplace_back(std::thread(handle_connection, client_fd)).detach();
+            threads.emplace_back(std::thread(handle_connection, clientFD)).detach();
         }
-        close(server_fd);
+        close(serverFD);
     }
 
     ConnectionManager::ConnectionManager() :
-    server_fd {},
-    connection_status {}
+    serverFD {},
+    connectionStatus {true}
     {
-        connection_status = true;
-        create_socket();
-        check_address();
-        check_connection();
+        createSocket();
+        checkAddress();
+        checkConnection();
 
-        if (connection_status) PRINT_SUCCESS("Connection Stablished");
+        if (connectionStatus) PRINT_SUCCESS("Connection Stablished");
     }
 
     ConnectionManager::~ConnectionManager() {
-        close(server_fd);
+        close(serverFD);
     }
 
     // GETTERS
 
-    int ConnectionManager::get_server_fd() {return server_fd;}
+    int ConnectionManager::getServerFD() {return serverFD;}
 
-    bool ConnectionManager::get_connection_status() {return connection_status;}
+    bool ConnectionManager::getConnectionStatus() {return connectionStatus;}
 
     // METHODS
 
-    void ConnectionManager::create_socket() {
-        int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-        if (server_fd < 0) {
+    void ConnectionManager::createSocket() {
+        int serverFD = socket(AF_INET, SOCK_STREAM, 0);
+        if (serverFD < 0) {
             PRINT_ERROR("Failed to create server socket");
-            connection_status = false;
+            connectionStatus = false;
             return;
             }
 
-        this->server_fd = server_fd;
+        this->serverFD = serverFD;
     }
 
-    void ConnectionManager::check_address() {
+    void ConnectionManager::checkAddress() {
 
         // Since the tester restarts your program quite often, setting SO_REUSEADDR
         // ensures that we don't run into 'Address already in use' errors
         int reuse = 1;
-        if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+        if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
             PRINT_ERROR("setsockopt failed");
-            connection_status = false;
+            connectionStatus = false;
             return;
         }
 
@@ -86,18 +85,18 @@ namespace ServerConnection {
         server_addr.sin_addr.s_addr = INADDR_ANY;
         server_addr.sin_port = htons(6379);
 
-        if (bind(server_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
-            connection_status = false;
+        if (bind(serverFD, (struct sockaddr *) &server_addr, sizeof(server_addr)) != 0) {
+            connectionStatus = false;
             PRINT_ERROR("Failed to bind to port 6379");
             return;
         }
     }
 
-    void ConnectionManager::check_connection() {
+    void ConnectionManager::checkConnection() {
         int connection_backlog = 5;
-        if (listen(server_fd, connection_backlog) != 0) {
+        if (listen(serverFD, connection_backlog) != 0) {
             PRINT_ERROR("listen failed");
-            connection_status = false;
+            connectionStatus = false;
         }
     }
 
