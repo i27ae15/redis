@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>
+#include <vector>
+#include <string>
 
 // Define color codes as macros
 #define RESET       "\033[0m"
@@ -16,7 +18,11 @@
 
 
 // Utility macros for easy colored output
-#define PRINT_SUCCESS(text) std::cout << GREEN << text << RESET << std::endl
-#define PRINT_WARNING(text) std::cout << YELLOW << text << RESET << std::endl
-#define PRINT_ERROR(text)   std::cout << RED << text << RESET << std::endl
+#define PRINT_SUCCESS(text)      std::cout << GREEN << text << RESET << std::endl
+#define PRINT_WARNING(text)      std::cout << YELLOW << text << RESET << std::endl
+#define PRINT_ERROR(text)        std::cout << RED << text << RESET << std::endl
 #define PRINT_COLOR(color, text) std::cout << color << text << RESET << std::endl
+
+namespace RemusUtils {
+    std::vector<std::string> splitString(const std::string& str, const std::string& delimiter);
+}

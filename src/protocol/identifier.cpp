@@ -1,4 +1,10 @@
+#include <serverConn/server_connection.h>
+
+#include <db/utils.h>
+#include <db/db_manager.h>
+
 #include <protocol/identifier.h>
+#include <protocol/utils.h>
 
 namespace ProtocolID {
 
@@ -169,15 +175,13 @@ namespace ProtocolID {
         index += 3; // adding get
         std::string key = getVariable(index);
 
-        RemusDB::DbManager dbManager;
-        RemusDB::DatabaseBlock db {};
-        db = dbManager.parseDatabase();
+        RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
 
-        if (db.keyValue[key].expired) {
-            PRINT_SUCCESS("This shit expird");
+        if (db->keyValue[key].expired) {
+            PRINT_SUCCESS("This shit expired");
             rObject = new ProtocolUtils::ReturnObject("$-1\r\n", 0);
         } else {
-            std::string response = ProtocolUtils::constructProtocol({db.keyValue[key].value}, false);
+            std::string response = ProtocolUtils::constructProtocol({db->keyValue[key].value}, false);
             rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         }
@@ -250,13 +254,11 @@ namespace ProtocolID {
 
         if (var != "*") return false;
 
-        RemusDB::DbManager dbManager;
-        RemusDB::DatabaseBlock db {};
+        RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
 
         // returning all the keys
-        db = dbManager.parseDatabase();
-        std::map<std::string, RemusDB::InfoBlock>& keys = db.keyValue;
-        for (std::map<std::string, RemusDB::InfoBlock>::iterator it = keys.begin(); it != keys.end(); ++it) {
+        std::map<std::string, RemusDBUtils::InfoBlock>& keys = db->keyValue;
+        for (std::map<std::string, RemusDBUtils::InfoBlock>::iterator it = keys.begin(); it != keys.end(); ++it) {
             dbKeys.push_back(it->first);
         }
 
@@ -271,7 +273,7 @@ namespace ProtocolID {
         size_t index = searchProtocol("info");
         if (index == std::string::npos) return false;
 
-        std::string response = ProtocolUtils::constructProtocol({"role:master"}, false);
+        std::string response = ProtocolUtils::constructProtocol({"role:" + conn->getRole()}, false);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;

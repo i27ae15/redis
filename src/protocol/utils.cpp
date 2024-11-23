@@ -1,4 +1,5 @@
 #include <protocol/identifier.h>
+#include <protocol/utils.h>
 
 namespace ProtocolUtils {
 

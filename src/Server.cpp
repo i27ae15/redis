@@ -1,18 +1,32 @@
-#include <server_connection.h>
+#include <serverConn/helpers.h>
+#include <serverConn/server_connection.h>
+
 #include <db/db_manager.h>
+
+#include <protocol/identifier.h>
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 
-  RemusConfig::ConfigManager::initialize(argc, argv);
+  std::vector<RemusConnHelper::connConf> connConfigs = RemusConnHelper::configInitializer(argc, argv);
+  std::vector<RemusConn::ConnectionManager*> conns {};
 
-  ServerConnection::ConnectionManager conn(&RemusConfig::ConfigManager::getInstance());
-  if (!conn.getConnectionStatus()) return 1;
+  for (RemusConnHelper::connConf connConf : connConfigs) {
+    RemusConn::ConnectionManager* newConn = new RemusConn::ConnectionManager(
+      connConf.port, connConf.dirName, connConf.fileName, connConf.role
+    );
 
-  int server_fd = conn.getServerFD();
-  ServerConnection::listener(server_fd);
+    if (!newConn->getConnectionStatus()) return 1;
+
+    // We need to create a protocol id and a dbManager
+    newConn->setDbManager(new RemusDB::DbManager(newConn));
+    newConn->setProtocolIdr(new ProtocolID::ProtocolIdentifier(newConn));
+
+    RemusConnHelper::listener(newConn);
+    conns.push_back(newConn);
+  }
 
   return 0;
 }

@@ -1,6 +1,6 @@
 #include <config_manager.h>
 
-// Derprecated
+// Deprecated
 
 namespace RemusConfig {
 
