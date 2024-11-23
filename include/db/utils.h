@@ -1,8 +1,9 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <map>
 
-namespace RemusDB {
+namespace RemusDBUtils {
 
     struct InfoBlock {
         std::string key;

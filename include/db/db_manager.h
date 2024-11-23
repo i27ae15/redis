@@ -1,16 +1,15 @@
 #pragma once
-#include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
-#include <cstdint>
-#include <stdexcept>
 #include <map>
 
 #include <utils.h>
 #include <db/utils.h>
 
-#include <server_connection.h>
+namespace RemusConn {
+    class ConnectionManager;
+}
 
 namespace RemusDB {
 
@@ -21,9 +20,13 @@ namespace RemusDB {
         DbManager(RemusConn::ConnectionManager* conn);
         ~DbManager();
         void parseHeader();
-        DatabaseBlock parseDatabase();
+
+        RemusDBUtils::DatabaseBlock* getDB();
 
         private:
+
+        RemusDBUtils::DatabaseBlock* db;
+        void parseDatabase();
 
         RemusConn::ConnectionManager* conn;
 
