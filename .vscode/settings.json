@@ -85,6 +85,9 @@
         "queue": "cpp",
         "stack": "cpp",
         "string_view": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "filesystem": "cpp",
+        "functional": "cpp",
+        "xtree": "cpp"
     }
 }

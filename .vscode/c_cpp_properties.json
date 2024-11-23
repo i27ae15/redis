@@ -1,20 +1,22 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "WSL",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/usr/include/c++/13",
+                "/usr/include/x86_64-linux-gnu/c++/13",
+                "/usr/include/c++/13/backward",
+                "/usr/lib/gcc/x86_64-linux-gnu/13/include",
+                "/usr/include/x86_64-linux-gnu",
+                "/usr/include",
+                "/usr/local/include"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "windowsSdkVersion": "10.0.22621.0",
-            "compilerPath": "cl.exe",
-            "cStandard": "c17",
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4
