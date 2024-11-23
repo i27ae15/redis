@@ -14,10 +14,13 @@
 #include <utils.h>
 #include <regex>
 
-#include <db/utils.h>
-#include <protocol/utils.h>
-#include <server_connection.h>
+namespace ProtocolUtils {
+    class ReturnObject;
+}
 
+namespace RemusConn {
+    class ConnectionManager;
+}
 
 namespace ProtocolID {
 
