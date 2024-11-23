@@ -11,6 +11,6 @@ namespace ProtocolUtils {
         ReturnObject(std::string return_value, int behavior);
     };
 
-    std::string constructProtocol(std::vector<std::string> args, bool isArray);
+    std::string constructProtocol(std::vector<std::string> args, bool isArray, bool asBulkString = false);
 
 }

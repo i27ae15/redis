@@ -9,18 +9,25 @@ namespace ProtocolUtils {
         this->bytes = return_value.size();
     }
 
-    std::string constructProtocol(std::vector<std::string> args, bool isArray) {
+    std::string constructProtocol(std::vector<std::string> args, bool isArray, bool asBulkString) {
 
-        std::string protocol {};
+        std::string response {};
         if (isArray) {
-            protocol += "*" + std::to_string(args.size()) + "\r\n";
+            response += "*" + std::to_string(args.size()) + "\r\n";
         }
 
         for (std::string arg : args) {
-            protocol += "$" + std::to_string(arg.size()) + "\r\n" + arg + "\r\n";
+            
+            if (asBulkString) {
+                response += arg;
+            } else {
+                response += "$" + std::to_string(arg.size()) + "\r\n" + arg + "\r\n";
+            }
+
         }
 
-        return protocol;
+        if (asBulkString) response = "$" + std::to_string(response.size()) + "\r\n" + response + "\r\n";
+        return response;
     }
 
 }

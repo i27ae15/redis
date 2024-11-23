@@ -273,8 +273,12 @@ namespace ProtocolID {
         size_t index = searchProtocol("info");
         if (index == std::string::npos) return false;
 
-        std::string response = ProtocolUtils::constructProtocol({"role:" + conn->getRole()}, false);
+        std::string response = ProtocolUtils::constructProtocol(
+        {"role:" + conn->getRole(), "master_repl_offset:0", "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"},
+        false, true);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
+
+        PRINT_SUCCESS("rValue" + rObject->return_value);
 
         return true;
     }
