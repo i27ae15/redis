@@ -184,6 +184,13 @@ namespace RemusConn {
         handShakedWithMaster = true;
         PRINT_SUCCESS("Hand shake stablished");
 
+        // Step 3
+
+        bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
+        buffer[bytesReceived] = '\0';
+        response = ProtocolUtils::constructProtocol({"PSYNC", "?", "-1"}, true);
+        send(getMasterServerFD(), response.c_str(), response.size(), 0);
+
     }
 
     void Slave::assignMaster(Master* master) {
