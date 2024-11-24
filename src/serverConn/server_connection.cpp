@@ -184,8 +184,6 @@ namespace RemusConn {
         handShakedWithMaster = true;
         PRINT_SUCCESS("Hand shake stablished");
 
-        return;
-
     }
 
     void Slave::assignMaster(Master* master) {
