@@ -30,15 +30,22 @@ namespace RemusConn {
 
         public:
 
-        int getServerFD();
+        // Getters
+
+        signed short getServerFD();
+        signed short getPort();
+
         bool getConnectionStatus();
 
-        // Getters
+        std::string getHost();
         std::string getDirName();
         std::string getFileName();
-        int getPort();
 
-        ConnectionManager(int port = 6379, std::string dirName = "", std::string fileName = "", std::string role = "master");
+        ConnectionManager(
+            signed short port, std::string role, std::string host,
+            std::string dirName = "", std::string fileName = ""
+        );
+
         ~ConnectionManager();
 
         void setProtocolIdr(ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite = false);
@@ -55,15 +62,52 @@ namespace RemusConn {
             std::string dirName;
             std::string fileName;
             std::string role;
+            std::string host;
 
-            int port;
+            signed short port;
+            signed short serverFD;
 
-            int serverFD;
             bool connectionStatus;
 
             void createSocket();
             void checkAddress();
             void checkConnection();
+    };
+
+    class Master : public ConnectionManager {
+
+        public:
+            Master(signed short port, std::string host,
+             std::string dirName = "", std::string fileName = "");
+
+    };
+
+    class Slave : public ConnectionManager {
+
+        public:
+            Slave(signed short port, std::string host,
+             std::string dirName = "", std::string fileName = "");
+
+            void assignMaster(Master* master);
+            void assignMaster(signed short port, signed short serverFD, std::string host);
+
+            void handShakeWithMaster();
+
+            std::string getMasterHost();
+            signed short getMasterPort();
+            signed short getMasterServerFD();
+
+        private:
+
+            Master* master;
+
+            std::string masterHost;
+
+            bool handShakedWithMaster;
+
+            signed short masterPort;
+            signed short masterServerFD;
+
     };
 
 

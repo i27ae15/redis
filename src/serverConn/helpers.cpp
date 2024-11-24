@@ -1,5 +1,6 @@
 #include <vector>
 #include <string>
+#include <memory>
 
 #include <serverConn/helpers.h>
 #include <serverConn/server_connection.h>
@@ -7,12 +8,16 @@
 #include <protocol/identifier.h>
 #include <protocol/utils.h>
 
+#include <db/db_manager.h>
+
+#include <protocol/identifier.h>
+
 #include <utils.h>
 
 
 namespace RemusConnHelper {
 
-    std::vector<RemusConnHelper::connConf> configInitializer(int argc, char** argv) {
+    connConfigs configInitializer(int argc, char** argv) {
 
         int port = 6379;
         int masterPort {};
@@ -21,9 +26,9 @@ namespace RemusConnHelper {
         std::string dirName {}; // This might be a static variable
         std::string fileName {};
         std::string masterHost {};
+        connConfigs configs {};
 
         std::array<std::string, 4> flagCofig = {"--dir", "--dbfilename", "--port", "--replicaof"};
-        std::vector<RemusConnHelper::connConf> connections {};
 
         for (int i = 1; i < argc; ++i) {
             std::string key = argv[i];
@@ -53,13 +58,17 @@ namespace RemusConnHelper {
 
         // Check if we don't have a master
         if (!masterPort) {
-            connections.emplace_back(RemusConnHelper::connConf{dirName, fileName, host, "master", port});
-            return connections;
+            configs.conns.emplace_back(RemusConnHelper::connConf{dirName, fileName, host, "master", port});
+            masterPort = port;
+            masterHost = host;
+        } else {
+            configs.conns.emplace_back(RemusConnHelper::connConf{dirName, fileName, host, "slave", port});
         }
-        // connections.emplace_back(RemusConnHelper::connConf{dirName, fileName, masterHost, "master", masterPort});
-        connections.emplace_back(RemusConnHelper::connConf{dirName, fileName, host, "slave", port});
 
-        return connections;
+        configs.masterHost = masterHost;
+        configs.masterPort = masterPort;
+
+        return configs;
     }
 
     void handle_connection(RemusConn::ConnectionManager* conn, int clientFD) {
@@ -97,5 +106,37 @@ namespace RemusConnHelper {
     void initializeListener(RemusConn::ConnectionManager* conn) {
         std::vector<std::thread> threads {};
         threads.emplace_back(std::thread(listener, conn));
+    }
+
+    std::vector<RemusConn::ConnectionManager*> initializeConnections(int argc, char **argv) {
+
+        connConfigs connConfigs = configInitializer(argc, argv);
+        std::vector<RemusConn::ConnectionManager*> conns {};
+
+        for (RemusConnHelper::connConf connConf : connConfigs.conns) {
+
+            RemusConn::ConnectionManager* newConn {nullptr};
+
+            if (connConf.role == "master") {
+                newConn = new RemusConn::Master(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
+            } else {
+                RemusConn::Slave* slaveConn = new RemusConn::Slave(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
+                slaveConn->assignMaster(connConfigs.masterPort, -1, connConfigs.masterHost);
+                slaveConn->handShakeWithMaster();
+                newConn = slaveConn;
+            }
+
+            if (!newConn->getConnectionStatus()) throw std::runtime_error("Connection error");
+
+            // We need to create a protocol id and a dbManager
+            newConn->setDbManager(new RemusDB::DbManager(newConn));
+            newConn->setProtocolIdr(new ProtocolID::ProtocolIdentifier(newConn));
+
+            RemusConnHelper::listener(newConn);
+            conns.push_back(newConn);
+        }
+
+        return conns;
+
     }
 }

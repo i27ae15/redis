@@ -32,7 +32,15 @@ namespace RemusConnHelper {
         int port;
     };
 
-    std::vector<connConf> configInitializer(int argc, char** argv);
+    struct connConfigs {
+        std::vector<connConf> conns;
+        std::string masterHost;
+        signed short masterPort;
+    };
+
+    connConfigs configInitializer(int argc, char** argv);
+    std::vector<RemusConn::ConnectionManager*> initializeConnections(int argc, char **argv);
+
     void handle_connection(RemusConn::ConnectionManager* conn, int clientFD);
     void listener(RemusConn::ConnectionManager* conn);
     void initializeListener(RemusConn::ConnectionManager* conn);

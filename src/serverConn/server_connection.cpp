@@ -4,16 +4,19 @@
 
 namespace RemusConn {
 
-    ConnectionManager::ConnectionManager(int port, std::string dirName, std::string fileName, std::string role) :
+    ConnectionManager::ConnectionManager(
+        signed short port, std::string role, std::string host,
+        std::string dirName, std::string fileName) :
     serverFD {},
     connectionStatus {true},
     port {port},
     dirName {dirName},
     fileName {fileName},
     role {role},
+    host {host},
     dbManager {nullptr},
     protocolIdr {nullptr}
-    {   
+    {
 
         createSocket();
         checkAddress();
@@ -28,9 +31,9 @@ namespace RemusConn {
 
     // GETTERS
 
-    int ConnectionManager::getServerFD() {return serverFD;}
-    
-    int ConnectionManager::getPort() {return port;}
+    signed short ConnectionManager::getServerFD() {return serverFD;}
+
+    signed short ConnectionManager::getPort() {return port;}
 
     bool ConnectionManager::getConnectionStatus() {return connectionStatus;}
 
@@ -39,6 +42,8 @@ namespace RemusConn {
     std::string ConnectionManager::getFileName() {return fileName;}
 
     std::string ConnectionManager::getRole() {return role;}
+
+    std::string ConnectionManager::getHost() {return host;}
 
     ProtocolID::ProtocolIdentifier* ConnectionManager::getProtocolIdr() {
         return protocolIdr;
@@ -52,7 +57,7 @@ namespace RemusConn {
     void ConnectionManager::setProtocolIdr(
         ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite
     ) {
-        
+
         if (this->protocolIdr == nullptr) this->protocolIdr = protocolIdr; return;
 
         if (!overWrite) {
@@ -125,6 +130,68 @@ namespace RemusConn {
             PRINT_ERROR("listen failed");
             connectionStatus = false;
         }
+    }
+
+    Master::Master(signed short port, std::string host, std::string dirName, std::string fileName) :
+    ConnectionManager(port, "master", host, dirName, fileName) {}
+
+    Slave::Slave(signed short port, std::string host, std::string dirName, std::string fileName) :
+    ConnectionManager(port, "slave", host, dirName, fileName),
+    handShakedWithMaster {},
+    master {nullptr}
+    {
+    }
+
+    void Slave::handShakeWithMaster() {
+        if (handShakedWithMaster) return;
+
+        struct sockaddr_in master_addr;
+        master_addr.sin_family = AF_INET;
+        master_addr.sin_port = htons(getMasterPort());
+        master_addr.sin_addr.s_addr = INADDR_ANY;
+
+        inet_pton(AF_INET, getMasterHost().c_str(), &master_addr.sin_addr);
+        if (connect(getMasterServerFD(), (struct sockaddr *) &master_addr, sizeof(master_addr)) != 0) {
+            PRINT_ERROR("Error connecting");
+            return;
+        }
+
+        std::string handshake = "*1\r\n$4\r\nPING\r\n";
+        send(getMasterServerFD(), handshake.c_str(), handshake.size(), 0);
+
+        handShakedWithMaster = true;
+    }
+
+    void Slave::assignMaster(Master* master) {
+        this->master = master;
+        assignMaster(master->getPort(), master->getServerFD(), master->getHost());
+    }
+
+    void Slave::assignMaster(signed short port, signed short serverFD, std::string host) {
+        masterPort = port;
+        masterServerFD = serverFD;
+        masterHost = host == "localhost" ? "127.0.0.1" : host;
+    }
+
+    std::string Slave::getMasterHost() {
+        return masterHost;
+    }
+
+    signed short Slave::getMasterPort() {
+        return masterPort;
+    }
+
+    signed short Slave::getMasterServerFD() {
+
+        if (masterServerFD == -1) {
+            masterServerFD = socket(AF_INET, SOCK_STREAM, 0);
+        }
+
+        if (masterServerFD < 0) {
+            PRINT_ERROR("Failed to create master socket");
+        }
+
+        return masterServerFD;
     }
 
 }
