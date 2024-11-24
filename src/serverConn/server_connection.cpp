@@ -1,5 +1,6 @@
 #include <serverConn/server_connection.h>
 #include <protocol/identifier.h>
+#include <protocol/utils.h>
 #include <db/db_manager.h>
 
 namespace RemusConn {
@@ -142,9 +143,16 @@ namespace RemusConn {
     {
     }
 
+    bool Slave::isInHandShake() {
+        if (!handShakedWithMaster && handShakeStep > 0) return true;
+        return false;
+    }
+
     void Slave::handShakeWithMaster() {
         if (handShakedWithMaster) return;
+        handShakeStep = 1;
 
+        // First Step
         struct sockaddr_in master_addr;
         master_addr.sin_family = AF_INET;
         master_addr.sin_port = htons(getMasterPort());
@@ -156,10 +164,28 @@ namespace RemusConn {
             return;
         }
 
-        std::string handshake = "*1\r\n$4\r\nPING\r\n";
-        send(getMasterServerFD(), handshake.c_str(), handshake.size(), 0);
+        std::string response = "*1\r\n$4\r\nPING\r\n";
+        send(getMasterServerFD(), response.c_str(), response.size(), 0);
+
+        // Wait for "PONG" from the master
+        char buffer[1024] = {0};
+        signed int bytesReceived {};
+
+        bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
+        buffer[bytesReceived] = '\0';
+        response = ProtocolUtils::constructProtocol({"REPLCONF", "listening-port", std::to_string(getPort())}, true);
+        send(getMasterServerFD(), response.c_str(), response.size(), 0);
+
+        bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
+        buffer[bytesReceived] = '\0';
+        response = ProtocolUtils::constructProtocol({"REPLCONF", "capa", "psync2"}, true);
+        send(getMasterServerFD(), response.c_str(), response.size(), 0);
 
         handShakedWithMaster = true;
+        PRINT_SUCCESS("Hand shake stablished");
+
+        return;
+
     }
 
     void Slave::assignMaster(Master* master) {

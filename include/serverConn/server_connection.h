@@ -90,12 +90,14 @@ namespace RemusConn {
 
             void assignMaster(Master* master);
             void assignMaster(signed short port, signed short serverFD, std::string host);
-
             void handShakeWithMaster();
 
-            std::string getMasterHost();
             signed short getMasterPort();
             signed short getMasterServerFD();
+
+            bool isInHandShake();
+
+            std::string getMasterHost();
 
         private:
 
@@ -105,6 +107,7 @@ namespace RemusConn {
 
             bool handShakedWithMaster;
 
+            signed short handShakeStep;
             signed short masterPort;
             signed short masterServerFD;
 
