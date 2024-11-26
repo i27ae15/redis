@@ -20,7 +20,8 @@ namespace ProtocolID {
         &ProtocolIdentifier::identifyGet,
         &ProtocolIdentifier::identifyGetNoDB,
         &ProtocolIdentifier::identifyKeys,
-        &ProtocolIdentifier::identifyInfo
+        &ProtocolIdentifier::identifyInfo,
+        &ProtocolIdentifier::identifyReplConfi
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {}
@@ -39,7 +40,13 @@ namespace ProtocolID {
         return protocol;
     }
 
-    bool ProtocolIdentifier::identifyProtocol(const std::string& buffer) {
+    void ProtocolIdentifier::cleanResponseObject() {
+        rObject = new ProtocolUtils::ReturnObject("+\r\n", 0);
+    }
+
+    bool ProtocolIdentifier::identifyProtocol(const std::string& buffer, bool clearRObject) {
+
+        if (clearRObject) cleanResponseObject();
         std::regex non_printable("[^\\x20-\\x7E]+");
 
         // Convert both strings to lowercase
@@ -278,6 +285,16 @@ namespace ProtocolID {
         false, true);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
         return true;
+    }
+
+    bool ProtocolIdentifier::identifyReplConfi() {
+        size_t index = searchProtocol("replconf");
+        if (index == std::string::npos) return false;
+
+        std::string response = ProtocolUtils::constructProtocol({"OK"}, false);
+        rObject = new ProtocolUtils::ReturnObject(response, 0);
+        return true;
+
     }
 
 }
