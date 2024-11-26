@@ -84,6 +84,15 @@ namespace RemusConnHelper {
 
             ProtocolUtils::ReturnObject* rObject = conn->getProtocolIdr()->getRObject();
             send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
+
+            if (conn->sendDBFile) {
+                short signed fileLength = conn->getDbFile().size();
+                rObject = new ProtocolUtils::ReturnObject("$" + std::to_string(fileLength) + "\r\n" + conn->getDbFile(), 0);
+                PRINT_SUCCESS(rObject->return_value);
+                send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
+                conn->sendDBFile = false;
+            }
+
         }
         close(clientFD);
     }

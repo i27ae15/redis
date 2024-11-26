@@ -49,6 +49,8 @@ namespace RemusConn {
 
     std::string ConnectionManager::getId() {return id;}
 
+    std::string ConnectionManager::getDbFile() {return dbManager->getDbFile();}
+
     ProtocolID::ProtocolIdentifier* ConnectionManager::getProtocolIdr() {
         return protocolIdr;
     }

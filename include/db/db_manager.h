@@ -23,6 +23,10 @@ namespace RemusDB {
 
         RemusDBUtils::DatabaseBlock* getDB();
 
+        std::string getDirName();
+        std::string getFileName();
+        std::string getDbFile();
+
         private:
 
         RemusDBUtils::DatabaseBlock* db;
@@ -43,8 +47,6 @@ namespace RemusDB {
 
         void openFile();
 
-        std::string getDirName();
-        std::string getFileName();
 
     };
 

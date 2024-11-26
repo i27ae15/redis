@@ -52,6 +52,9 @@ namespace RemusConn {
         void setProtocolIdr(ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite = false);
         void setDbManager(RemusDB::DbManager* dbManager, bool overWrite = false);
 
+        bool sendDBFile;
+        std::string getDbFile();
+
         ProtocolID::ProtocolIdentifier* getProtocolIdr();
         RemusDB::DbManager* getDbManager();
         std::string getRole();

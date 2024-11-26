@@ -303,8 +303,8 @@ namespace ProtocolID {
         if (index == std::string::npos) return false;
 
         rObject = new ProtocolUtils::ReturnObject("+FULLRESYNC "  + conn->getId() + " 0\r\n", 0);
+        conn->sendDBFile = true;
         return true;
-
     }
 
 }
