@@ -59,14 +59,7 @@ namespace ProtocolID {
         // Replace non-printable characters with an empty string
         cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
         for (auto method : checkMethods) {
-            if ((this->*method)()) {
-
-                if (conn->getRole() == "slave") return true;
-
-                RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
-                masterConn->propageProtocolToReplica(buffer);
-                return true;
-            }
+            if ((this->*method)()) return true;
         }
 
         PRINT_ERROR("Protocol could not be identified");
@@ -175,6 +168,12 @@ namespace ProtocolID {
         cache.setValue(key, value, expireTime.first, expireTime.second);
 
         rObject = new ProtocolUtils::ReturnObject("+OK\r\n", 0);
+
+        if (conn->getRole() == "slave") return true;
+
+        RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+        masterConn->propageProtocolToReplica(buffer);
+
         return true;
     }
 
