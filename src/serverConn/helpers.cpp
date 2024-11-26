@@ -80,17 +80,24 @@ namespace RemusConnHelper {
 
             buffer[bytes_received] = '\0';
 
+            PRINT_WARNING("Pre Identifiying");
             conn->getProtocolIdr()->identifyProtocol(buffer);
-
             ProtocolUtils::ReturnObject* rObject = conn->getProtocolIdr()->getRObject();
+            PRINT_WARNING("INFO : " + rObject->return_value);
             send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
 
             if (conn->sendDBFile) {
-                short signed fileLength = conn->getDbFile().size();
+                signed short fileLength = conn->getDbFile().size();
                 rObject = new ProtocolUtils::ReturnObject("$" + std::to_string(fileLength) + "\r\n" + conn->getDbFile(), 0);
-                PRINT_SUCCESS(rObject->return_value);
                 send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
                 conn->sendDBFile = false;
+
+                RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+                masterConn->setCurrentReplicaServerFd(clientFD);
+                masterConn->addAndCleanCurrentReplicaConn();
+                masterConn->inHandShakeWithReplica = false;
+
+                PRINT_SUCCESS("client fd: " + std::to_string(clientFD));
             }
 
         }

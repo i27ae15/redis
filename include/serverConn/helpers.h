@@ -32,6 +32,11 @@ namespace RemusConnHelper {
         int port;
     };
 
+    struct replicaConn {
+        signed short port;
+        signed short serverFD;
+    };
+
     struct connConfigs {
         std::vector<connConf> conns;
         std::string masterHost;

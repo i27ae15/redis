@@ -138,8 +138,41 @@ namespace RemusConn {
         }
     }
 
+    // Master Class
+
     Master::Master(signed short port, std::string host, std::string dirName, std::string fileName) :
-    ConnectionManager(port, "master", host, dirName, fileName) {}
+    ConnectionManager(port, "master", host, dirName, fileName),
+    inHandShakeWithReplica {},
+    currentReplicaConn {},
+    replicaConns {}
+    {}
+
+    void Master::createCurrentReplicaConn() {
+        currentReplicaConn = RemusConnHelper::replicaConn();
+    }
+
+    void Master::addAndCleanCurrentReplicaConn() {
+        replicaConns.push_back(currentReplicaConn);
+        currentReplicaConn = RemusConnHelper::replicaConn();
+    }
+
+    void Master::setCurrentReplicaPort(signed short value) {
+        currentReplicaConn.port = value;
+    }
+
+    void Master::setCurrentReplicaServerFd(signed short value) {
+        currentReplicaConn.serverFD = value;
+    }
+
+    void Master::propageProtocolToReplica(const std::string& buffer) {
+
+        // rObject = new ProtocolUtils::ReturnObject("$" + std::to_string(fileLength) + "\r\n" + conn->getDbFile(), 0);
+        for (RemusConnHelper::replicaConn reConn : replicaConns) {
+            send(reConn.serverFD, buffer.c_str(), buffer.size(), 0);
+        }
+    }
+
+    // Replica Class
 
     Slave::Slave(signed short port, std::string host, std::string dirName, std::string fileName) :
     ConnectionManager(port, "slave", host, dirName, fileName),
@@ -186,15 +219,15 @@ namespace RemusConn {
         response = ProtocolUtils::constructProtocol({"REPLCONF", "capa", "psync2"}, true);
         send(getMasterServerFD(), response.c_str(), response.size(), 0);
 
-        handShakedWithMaster = true;
-        PRINT_SUCCESS("Hand shake stablished");
-
         // Step 3
 
         bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
         buffer[bytesReceived] = '\0';
         response = ProtocolUtils::constructProtocol({"PSYNC", "?", "-1"}, true);
         send(getMasterServerFD(), response.c_str(), response.size(), 0);
+
+        handShakedWithMaster = true;
+        PRINT_SUCCESS("Hand shake stablished");
 
     }
 

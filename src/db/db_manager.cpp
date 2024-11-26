@@ -212,6 +212,4 @@ namespace RemusDB {
         this->db = db;
     }
 
-
-
 }

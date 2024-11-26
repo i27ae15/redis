@@ -59,7 +59,14 @@ namespace ProtocolID {
         // Replace non-printable characters with an empty string
         cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
         for (auto method : checkMethods) {
-            if ((this->*method)()) return true;
+            if ((this->*method)()) {
+
+                if (conn->getRole() == "slave") return true;
+
+                RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+                masterConn->propageProtocolToReplica(buffer);
+                return true;
+            }
         }
 
         PRINT_ERROR("Protocol could not be identified");
@@ -78,7 +85,7 @@ namespace ProtocolID {
     }
 
     std::string ProtocolIdentifier::getVariable(
-        size_t starts_at, char listenOnSymbol, char endsOnSymbol
+        size_t starts_at, bool cleanFrontDigits, signed short avoidNChars, char listenOnSymbol, char endsOnSymbol
     ) {
         // This should be better implemeted
         // check the cleanedBuffer
@@ -86,22 +93,23 @@ namespace ProtocolID {
         bool listen = false;
 
         std::string variable {};
-        bool cleanFrontDigits = false;
 
         for (size_t i = starts_at; i < cleaned_buffer.size(); i++) {
             char current = cleaned_buffer[i];
 
             if (!listen && current == listenOnSymbol) {
                 listen = true;
-                if (listenOnSymbol == '$') {
-                    cleanFrontDigits = true;
-                    continue;
-                }
+                if (listenOnSymbol == '$') continue;
             }
 
             if (listen && cleanFrontDigits) {
                 if (!std::regex_match(std::string(1, current), not_digit)) continue;
                 cleanFrontDigits = false;
+            }
+
+            if (listen && avoidNChars > 0) {
+                avoidNChars--;
+                continue;
             }
 
             if (listen && current == endsOnSymbol) break;
@@ -291,6 +299,16 @@ namespace ProtocolID {
     bool ProtocolIdentifier::identifyReplConfi() {
         size_t index = searchProtocol("replconf");
         if (index == std::string::npos) return false;
+
+        RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+
+        if (!masterConn->inHandShakeWithReplica) {
+            masterConn->inHandShakeWithReplica = true;
+            masterConn->createCurrentReplicaConn();
+            // the first replConf is the port
+            std::string port = getVariable(index + 14, false, 1);
+            masterConn->setCurrentReplicaPort(std::stoi(port));
+        }
 
         std::string response = ProtocolUtils::constructProtocol({"OK"}, false);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
