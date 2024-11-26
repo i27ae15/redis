@@ -16,7 +16,8 @@ namespace RemusConn {
     role {role},
     host {host},
     dbManager {nullptr},
-    protocolIdr {nullptr}
+    protocolIdr {nullptr},
+    id {"8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"}
     {
 
         createSocket();
@@ -45,6 +46,8 @@ namespace RemusConn {
     std::string ConnectionManager::getRole() {return role;}
 
     std::string ConnectionManager::getHost() {return host;}
+
+    std::string ConnectionManager::getId() {return id;}
 
     ProtocolID::ProtocolIdentifier* ConnectionManager::getProtocolIdr() {
         return protocolIdr;

@@ -40,6 +40,7 @@ namespace RemusConn {
         std::string getHost();
         std::string getDirName();
         std::string getFileName();
+        std::string getId();
 
         ConnectionManager(
             signed short port, std::string role, std::string host,
@@ -56,6 +57,9 @@ namespace RemusConn {
         std::string getRole();
 
         private:
+
+            const std::string id;
+
             ProtocolID::ProtocolIdentifier* protocolIdr;
             RemusDB::DbManager* dbManager;
 

@@ -21,7 +21,8 @@ namespace ProtocolID {
         &ProtocolIdentifier::identifyGetNoDB,
         &ProtocolIdentifier::identifyKeys,
         &ProtocolIdentifier::identifyInfo,
-        &ProtocolIdentifier::identifyReplConfi
+        &ProtocolIdentifier::identifyReplConfi,
+        &ProtocolIdentifier::identifyPsync
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {}
@@ -293,6 +294,15 @@ namespace ProtocolID {
 
         std::string response = ProtocolUtils::constructProtocol({"OK"}, false);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
+        return true;
+
+    }
+
+    bool ProtocolIdentifier::identifyPsync() {
+        size_t index = searchProtocol("psync");
+        if (index == std::string::npos) return false;
+
+        rObject = new ProtocolUtils::ReturnObject("+FULLRESYNC "  + conn->getId() + " 0\r\n", 0);
         return true;
 
     }

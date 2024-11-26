@@ -48,7 +48,7 @@ namespace ProtocolID {
 
         std::pair<bool, size_t> getExpireTime();
 
-        bool (ProtocolIdentifier::*checkMethods[9])();
+        bool (ProtocolIdentifier::*checkMethods[10])();
         bool identifyPing();
         bool identifyEcho();
         bool identifySet();
@@ -58,6 +58,7 @@ namespace ProtocolID {
         bool identifyKeys();
         bool identifyInfo();
         bool identifyReplConfi();
+        bool identifyPsync();
 
         size_t searchProtocol(std::string search_word);
         std::string getVariable(
