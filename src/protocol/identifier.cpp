@@ -1,4 +1,6 @@
 #include <serverConn/server_connection.h>
+#include <serverConn/master.h>
+#include <serverConn/slave.h>
 
 #include <db/utils.h>
 #include <db/db_manager.h>
@@ -62,7 +64,7 @@ namespace ProtocolID {
             if ((this->*method)()) return true;
         }
 
-        PRINT_ERROR("Protocol could not be identified");
+        PRINT_ERROR("Protocol could not be identified: " + cleaned_buffer);
         return false;
 
     }

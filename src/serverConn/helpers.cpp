@@ -4,6 +4,8 @@
 
 #include <serverConn/helpers.h>
 #include <serverConn/server_connection.h>
+#include <serverConn/master.h>
+#include <serverConn/slave.h>
 
 #include <protocol/identifier.h>
 #include <protocol/utils.h>
@@ -119,6 +121,7 @@ namespace RemusConnHelper {
         close(conn->getServerFD());
     }
 
+    // Do not use
     void initializeListener(RemusConn::ConnectionManager* conn) {
         std::vector<std::thread> threads {};
         threads.emplace_back(std::thread(listener, conn));
