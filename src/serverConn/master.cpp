@@ -1,4 +1,5 @@
 #include <serverConn/master.h>
+#include <serverConn/structs.h>
 
 namespace RemusConn {
     // Master Class
@@ -11,12 +12,12 @@ namespace RemusConn {
     {}
 
     void Master::createCurrentReplicaConn() {
-        currentReplicaConn = RemusConnHelper::replicaConn();
+        currentReplicaConn = RemusConnStructs::replicaConn();
     }
 
     void Master::addAndCleanCurrentReplicaConn() {
         replicaConns.push_back(currentReplicaConn);
-        currentReplicaConn = RemusConnHelper::replicaConn();
+        currentReplicaConn = RemusConnStructs::replicaConn();
     }
 
     void Master::setCurrentReplicaPort(signed short value) {
@@ -30,7 +31,7 @@ namespace RemusConn {
     void Master::propageProtocolToReplica(const std::string& buffer) {
 
         // rObject = new ProtocolUtils::ReturnObject("$" + std::to_string(fileLength) + "\r\n" + conn->getDbFile(), 0);
-        for (RemusConnHelper::replicaConn reConn : replicaConns) {
+        for (RemusConnStructs::replicaConn reConn : replicaConns) {
             send(reConn.serverFD, buffer.c_str(), buffer.size(), 0);
         }
     }

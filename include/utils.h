@@ -15,12 +15,14 @@
 #define WHITE       "\033[37m"
 #define BOLD        "\033[1m"
 #define UNDERLINE   "\033[4m"
+#define PINK        "\033[95m"
 
 
 // Utility macros for easy colored output
 #define PRINT_SUCCESS(text)      std::cout << GREEN << text << RESET << std::endl
 #define PRINT_WARNING(text)      std::cout << YELLOW << text << RESET << std::endl
 #define PRINT_ERROR(text)        std::cout << RED << text << RESET << std::endl
+#define PRINT_HIGHLIGHT(text)    std::cout << PINK << text << RESET << std::endl
 #define PRINT_COLOR(color, text) std::cout << color << text << RESET << std::endl
 
 namespace RemusUtils {

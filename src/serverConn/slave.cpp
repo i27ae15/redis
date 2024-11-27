@@ -1,5 +1,6 @@
 #include <serverConn/slave.h>
 #include <serverConn/master.h>
+#include <serverConn/conn_manager.h>
 #include <protocol/utils.h>
 
 namespace RemusConn {
@@ -62,6 +63,9 @@ namespace RemusConn {
         bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
         buffer[bytesReceived] = '\0';
         PRINT_SUCCESS(buffer);
+
+        PRINT_WARNING("calling new thread on handle connection");
+        std::thread(ConnManager::handle_connection, this, getMasterServerFD()).detach();
 
     }
 

@@ -59,6 +59,7 @@ namespace ProtocolID {
         std::transform(buffer_data.begin(), buffer_data.end(), buffer_data.begin(), ::tolower);
 
         // Replace non-printable characters with an empty string
+        PRINT_WARNING(cleaned_buffer);
         cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
         for (auto method : checkMethods) {
             if ((this->*method)()) return true;
@@ -80,7 +81,8 @@ namespace ProtocolID {
     }
 
     std::string ProtocolIdentifier::getVariable(
-        size_t starts_at, bool cleanFrontDigits, signed short avoidNChars, char listenOnSymbol, char endsOnSymbol
+        size_t starts_at, bool cleanFrontDigits, signed short avoidNChars,
+        char listenOnSymbol, char endsOnSymbol
     ) {
         // This should be better implemeted
         // check the cleanedBuffer
@@ -158,18 +160,24 @@ namespace ProtocolID {
         size_t index = searchProtocol("set");
         if (index == std::string::npos) return false;
 
-        index += 3; // adding set
+        std::vector<std::string> variables = RemusUtils::splitString(cleaned_buffer, "*");
 
-        std::string key = getVariable(index);
-        std::string value = getVariable(index + key.size()); // Not correct the sum, but will work
+        for (std::string var : variables) {
+            index = var.find("set") + 3;
+            cleaned_buffer = var;
 
-        // Check if has px
-        std::pair<bool, size_t> expireTime = getExpireTime();
+            std::string key = getVariable(index);
+            std::string value = getVariable(index + key.size(), false, 1); // Not correct the sum, but will work
 
-        Cache::DataManager cache;
-        cache.setValue(key, value, expireTime.first, expireTime.second);
+            // Check if has px
+            std::pair<bool, size_t> expireTime = getExpireTime();
 
-        rObject = new ProtocolUtils::ReturnObject("+OK\r\n", 0);
+            Cache::DataManager cache;
+            cache.setValue(key, value, expireTime.first, expireTime.second);
+
+            rObject = new ProtocolUtils::ReturnObject("+OK\r\n", 0);
+        }
+
 
         if (conn->getRole() == "slave") return true;
 

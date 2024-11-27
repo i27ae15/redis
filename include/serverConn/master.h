@@ -1,5 +1,6 @@
 #pragma once
 #include <serverConn/server_connection.h>
+#include <serverConn/structs.h>
 
 namespace RemusConn {
 
@@ -20,8 +21,8 @@ namespace RemusConn {
             bool inHandShakeWithReplica;
 
         private:
-            RemusConnHelper::replicaConn currentReplicaConn;
-            std::vector<RemusConnHelper::replicaConn> replicaConns;
+            RemusConnStructs::replicaConn currentReplicaConn;
+            std::vector<RemusConnStructs::replicaConn> replicaConns;
 
     };
 }
