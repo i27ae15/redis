@@ -57,11 +57,6 @@ namespace RemusConn {
         response = ProtocolUtils::constructProtocol({"PSYNC", "?", "-1"}, true);
         send(getMasterServerFD(), response.c_str(), response.size(), 0);
 
-        bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
-        buffer[bytesReceived] = '\0';
-        response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
-        send(getMasterServerFD(), response.c_str(), response.size(), 0);
-
         handShakedWithMaster = true;
         PRINT_SUCCESS("Hand shake stablished: " + std::to_string(getMasterServerFD()));
 
