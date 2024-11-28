@@ -26,6 +26,7 @@ namespace ConnManager {
             buffer[bytes_received] = '\0';
             conn->getProtocolIdr()->identifyProtocol(buffer);
 
+
             ProtocolUtils::ReturnObject* rObject = conn->getProtocolIdr()->getRObject();
             if (rObject->sendResponse) send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
 
