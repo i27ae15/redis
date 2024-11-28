@@ -18,16 +18,16 @@ namespace ConnManager {
 
     void handle_connection(RemusConn::ConnectionManager* conn, int clientFD) {
 
-        char buffer[1024];
+        char buffer[128];
         while (true) {
             size_t bytes_received = recv(clientFD, buffer, sizeof(buffer) - 1, 0);
             if (bytes_received <= 0) break;
-            buffer[bytes_received] = '\0';
 
+            buffer[bytes_received] = '\0';
             conn->getProtocolIdr()->identifyProtocol(buffer);
 
             ProtocolUtils::ReturnObject* rObject = conn->getProtocolIdr()->getRObject();
-            send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
+            if (rObject->sendResponse) send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
 
             if (conn->sendDBFile) {
                 signed short fileLength = conn->getDbFile().size();
@@ -39,28 +39,25 @@ namespace ConnManager {
                 masterConn->setCurrentReplicaServerFd(clientFD);
                 masterConn->addAndCleanCurrentReplicaConn();
                 masterConn->inHandShakeWithReplica = false;
-
-                PRINT_SUCCESS("client fd: " + std::to_string(clientFD));
             }
 
         }
         close(clientFD);
     }
 
-    void listener(RemusConn::ConnectionManager* conn) {
+    void listener(RemusConn::ConnectionManager* conn, int serverFD) {
 
-        PRINT_SUCCESS("Listener Started");
+        PRINT_SUCCESS("Listener Started On ServerFD: " + std::to_string(serverFD));
 
         std::vector<std::thread> threads {};
         while (true) {
             struct sockaddr_in clientAddr {};
             int clientAddrLen = sizeof(clientAddr);
-            int clientFD = accept(conn->getServerFD(), (struct sockaddr *) &clientAddr, (socklen_t *) &clientAddrLen);
+            int clientFD = accept(serverFD, (struct sockaddr *) &clientAddr, (socklen_t *) &clientAddrLen);
 
             threads.emplace_back(std::thread(handle_connection, conn, clientFD)).detach();
-            PRINT_SUCCESS("New thread");
         }
-        close(conn->getServerFD());
+        close(serverFD);
     }
 
     void serverLoop(int argc, char **argv) {
@@ -69,7 +66,7 @@ namespace ConnManager {
         std::vector<RemusConn::ConnectionManager*> connections = ConnInitializer::initializeConnections(argc, argv);
 
         for (RemusConn::ConnectionManager* conn : connections) {
-            connThreads.emplace_back(std::thread(listener, conn));
+            connThreads.emplace_back(std::thread(listener, conn, conn->getServerFD()));
         }
 
         while (true) {}

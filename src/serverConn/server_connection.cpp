@@ -56,8 +56,23 @@ namespace RemusConn {
     std::string ConnectionManager::getDbFile() {return dbManager->getDbFile();}
 
     ProtocolID::ProtocolIdentifier* ConnectionManager::getProtocolIdr() {
+
+        PRINT_HIGHLIGHT("In manager");
+
+        if (!protocolIdr->getInProcess()) return protocolIdr;
+
+        for (ProtocolID::ProtocolIdentifier* ptc : protocols) {
+            if (!ptc->getInProcess()) {
+                protocolIdr = ptc;
+                return ptc;
+            }
+        }
+
+        PRINT_WARNING("ALL WORKERS ARE BUSY, CREATING NEW ONE");
+        setProtocolIdr(new ProtocolID::ProtocolIdentifier(this), true);
         return protocolIdr;
     }
+
     RemusDB::DbManager* ConnectionManager::getDbManager() {
         return dbManager;
     }
@@ -68,6 +83,7 @@ namespace RemusConn {
         ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite
     ) {
 
+        protocols.push_back(protocolIdr);
         if (this->protocolIdr == nullptr) this->protocolIdr = protocolIdr; return;
 
         if (!overWrite) {
@@ -76,8 +92,7 @@ namespace RemusConn {
             return;
         }
 
-        PRINT_WARNING("Overwritting and deleting ProtocolID::ProtocolIndetifier object!");
-        delete this->protocolIdr;
+        PRINT_WARNING("Overwritting main ProtocolID::ProtocolIndetifier object!");
         this->protocolIdr = protocolIdr;
     }
 

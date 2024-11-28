@@ -57,16 +57,16 @@ namespace RemusConn {
         response = ProtocolUtils::constructProtocol({"PSYNC", "?", "-1"}, true);
         send(getMasterServerFD(), response.c_str(), response.size(), 0);
 
-        handShakedWithMaster = true;
-        PRINT_SUCCESS("Hand shake stablished");
 
         bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
         buffer[bytesReceived] = '\0';
-        PRINT_SUCCESS(buffer);
+        response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
+        send(getMasterServerFD(), response.c_str(), response.size(), 0);
 
-        PRINT_WARNING("calling new thread on handle connection");
+        handShakedWithMaster = true;
+        PRINT_SUCCESS("Hand shake stablished: " + std::to_string(getMasterServerFD()));
+
         std::thread(ConnManager::handle_connection, this, getMasterServerFD()).detach();
-
     }
 
     void Slave::assignMaster(Master* master) {

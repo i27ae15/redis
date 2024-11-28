@@ -3,10 +3,11 @@
 
 namespace ProtocolUtils {
 
-    ReturnObject::ReturnObject(std::string return_value, int behavior) {
+    ReturnObject::ReturnObject(std::string return_value, int behavior, bool sendResponse) {
         this->return_value = return_value;
         this->behavior = behavior;
         this->bytes = return_value.size();
+        this->sendResponse = sendResponse;
     }
 
     std::string constructProtocol(std::vector<std::string> args, bool isArray, bool asBulkString) {
@@ -17,7 +18,6 @@ namespace ProtocolUtils {
         }
 
         for (std::string arg : args) {
-            
             if (asBulkString) {
                 response += arg;
             } else {

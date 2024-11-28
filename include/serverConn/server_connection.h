@@ -47,7 +47,7 @@ namespace RemusConn {
             std::string dirName = "", std::string fileName = ""
         );
 
-        ~ConnectionManager();
+        virtual ~ConnectionManager();
 
         void setProtocolIdr(ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite = false);
         void setDbManager(RemusDB::DbManager* dbManager, bool overWrite = false);
@@ -62,6 +62,8 @@ namespace RemusConn {
         private:
 
             const std::string id;
+
+            std::vector<ProtocolID::ProtocolIdentifier*> protocols;
 
             ProtocolID::ProtocolIdentifier* protocolIdr;
             RemusDB::DbManager* dbManager;

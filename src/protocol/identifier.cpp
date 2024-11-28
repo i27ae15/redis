@@ -24,7 +24,8 @@ namespace ProtocolID {
         &ProtocolIdentifier::identifyKeys,
         &ProtocolIdentifier::identifyInfo,
         &ProtocolIdentifier::identifyReplConfi,
-        &ProtocolIdentifier::identifyPsync
+        &ProtocolIdentifier::identifyPsync,
+        &ProtocolIdentifier::identifyFullResync
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {}
@@ -43,11 +44,23 @@ namespace ProtocolID {
         return protocol;
     }
 
+    bool ProtocolIdentifier::getInProcess() {
+        return inProcess;
+    }
+
     void ProtocolIdentifier::cleanResponseObject() {
         rObject = new ProtocolUtils::ReturnObject("+\r\n", 0);
     }
 
+    // Setters
+
+    void ProtocolIdentifier::setInProcess(bool value) {
+        inProcess = value;
+    }
+
     bool ProtocolIdentifier::identifyProtocol(const std::string& buffer, bool clearRObject) {
+
+        setInProcess(true);
 
         if (clearRObject) cleanResponseObject();
         std::regex non_printable("[^\\x20-\\x7E]+");
@@ -59,13 +72,20 @@ namespace ProtocolID {
         std::transform(buffer_data.begin(), buffer_data.end(), buffer_data.begin(), ::tolower);
 
         // Replace non-printable characters with an empty string
+        PRINT_HIGHLIGHT("Before cleaning buffer");
         PRINT_WARNING(cleaned_buffer);
         cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
         for (auto method : checkMethods) {
-            if ((this->*method)()) return true;
+            if ((this->*method)()) {
+                PRINT_SUCCESS("Protocol found: " + protocol);
+                setInProcess(false);
+                return true;
+            }
         }
 
         PRINT_ERROR("Protocol could not be identified: " + cleaned_buffer);
+
+        setInProcess(false);
         return false;
 
     }
@@ -306,18 +326,36 @@ namespace ProtocolID {
     }
 
     bool ProtocolIdentifier::identifyReplConfi() {
+        PRINT_WARNING("On replica conf");
         size_t index = searchProtocol("replconf");
         if (index == std::string::npos) return false;
 
-        RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+        PRINT_HIGHLIGHT("On replica conf");
 
-        if (!masterConn->inHandShakeWithReplica) {
-            masterConn->inHandShakeWithReplica = true;
-            masterConn->createCurrentReplicaConn();
-            // the first replConf is the port
-            std::string port = getVariable(index + 14, false, 1);
-            masterConn->setCurrentReplicaPort(std::stoi(port));
+        if (dynamic_cast<RemusConn::Master*>(conn)) {
+            RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+
+            if (!masterConn->inHandShakeWithReplica) {
+                masterConn->inHandShakeWithReplica = true;
+                masterConn->createCurrentReplicaConn();
+                // the first replConf is the port
+                std::string port = getVariable(index + 14, false, 1);
+                masterConn->setCurrentReplicaPort(std::stoi(port));
+            }
+        } else {
+            PRINT_HIGHLIGHT("On replica conf");
+            RemusConn::Slave* masterConn = static_cast<RemusConn::Slave*>(conn);
+            size_t index = searchProtocol("getack");
+            if (index == std::string::npos) return false;
+
+
+            std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
+            response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n";
+            PRINT_HIGHLIGHT("adding response : " + response);
+            rObject = new ProtocolUtils::ReturnObject(response, 0);
+            return true;
         }
+
 
         std::string response = ProtocolUtils::constructProtocol({"OK"}, false);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
@@ -331,6 +369,13 @@ namespace ProtocolID {
 
         rObject = new ProtocolUtils::ReturnObject("+FULLRESYNC "  + conn->getId() + " 0\r\n", 0);
         conn->sendDBFile = true;
+        return true;
+    }
+
+    bool ProtocolIdentifier::identifyFullResync() {
+        size_t index = searchProtocol("fullresync");
+        if (index == std::string::npos) return false;
+        rObject = new ProtocolUtils::ReturnObject("None", 0, false);
         return true;
     }
 

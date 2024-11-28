@@ -106,10 +106,6 @@ namespace ConnInitializer {
             newConn->setDbManager(new RemusDB::DbManager(newConn));
             newConn->setProtocolIdr(new ProtocolID::ProtocolIdentifier(newConn));
 
-            PRINT_SUCCESS("Before thread");
-
-            PRINT_WARNING("After Thread");
-
             conns.push_back(newConn);
         }
 
