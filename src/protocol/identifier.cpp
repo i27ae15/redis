@@ -210,7 +210,7 @@ namespace ProtocolID {
     bool ProtocolIdentifier::identifyGet() {
 
         // Check if we get a db file.
-        if (!conn->getDirName().size()) return false;
+        if (conn->getDirName().size() == 0) return false;
 
         size_t index = searchProtocol("get");
         if (index == std::string::npos) return false;
