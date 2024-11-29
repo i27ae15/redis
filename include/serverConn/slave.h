@@ -32,7 +32,7 @@ namespace RemusConn {
 
             signed short handShakeStep;
             signed short masterPort;
-            signed short masterServerFD;
+            short masterServerFD;
 
     };
 

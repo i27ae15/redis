@@ -49,7 +49,7 @@ namespace ProtocolID {
     }
 
     void ProtocolIdentifier::cleanResponseObject() {
-        rObject = new ProtocolUtils::ReturnObject("+\r\n", 0);
+        rObject = new ProtocolUtils::ReturnObject("+\r\n", 0, false);
     }
 
     // Setters
@@ -58,11 +58,11 @@ namespace ProtocolID {
         inProcess = value;
     }
 
-    bool ProtocolIdentifier::identifyProtocol(const std::string& buffer, bool clearRObject) {
+    bool ProtocolIdentifier::identifyProtocol(const std::string buffer, bool clearRObject) {
 
         setInProcess(true);
 
-        if (clearRObject) cleanResponseObject();
+        if (clearRObject) cleanResponseObject(); cleaned_buffer = "";
         std::regex non_printable("[^\\x20-\\x7E]+");
 
         // Convert both strings to lowercase
@@ -72,19 +72,17 @@ namespace ProtocolID {
         std::transform(buffer_data.begin(), buffer_data.end(), buffer_data.begin(), ::tolower);
 
         // Replace non-printable characters with an empty string
-        PRINT_HIGHLIGHT("Before cleaning buffer");
-        PRINT_WARNING(cleaned_buffer);
         cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
+
         for (auto method : checkMethods) {
             if ((this->*method)()) {
-                PRINT_SUCCESS("Protocol found: " + protocol);
+                conn->print("Protocol found: " + protocol, GREEN);
                 setInProcess(false);
                 return true;
             }
         }
 
-        PRINT_ERROR("Protocol could not be identified: " + cleaned_buffer);
-
+        conn->print("Protocol could not be identified: " + cleaned_buffer, RED);
         setInProcess(false);
         return false;
 
@@ -373,9 +371,11 @@ namespace ProtocolID {
     }
 
     bool ProtocolIdentifier::identifyFullResync() {
+        return false;
         size_t index = searchProtocol("fullresync");
         if (index == std::string::npos) return false;
-        rObject = new ProtocolUtils::ReturnObject("None", 0, false);
+        std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
+        rObject = new ProtocolUtils::ReturnObject(response, 0, true);
         return true;
     }
 

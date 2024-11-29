@@ -33,7 +33,7 @@ namespace ProtocolID {
 
         ProtocolUtils::ReturnObject* getRObject();
         std::string getProtocol();
-        bool identifyProtocol(const std::string& buffer, bool clearRobject = true);
+        bool identifyProtocol(const std::string buffer, bool clearRobject = true);
 
         void cleanResponseObject();
 

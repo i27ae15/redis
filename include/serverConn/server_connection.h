@@ -59,6 +59,12 @@ namespace RemusConn {
         RemusDB::DbManager* getDbManager();
         std::string getRole();
 
+        void print(std::string msg);
+        void print(std::string msg, std::string color);
+
+        bool replicaHand;
+        int rs;
+
         private:
 
             const std::string id;

@@ -27,45 +27,23 @@ namespace RemusConn {
         master_addr.sin_port = htons(getMasterPort());
         master_addr.sin_addr.s_addr = INADDR_ANY;
 
+        PRINT_HIGHLIGHT("Master fd: " + std::to_string(getMasterServerFD()));
+        PRINT_HIGHLIGHT("Master port: " + std::to_string(getMasterPort()));
+        PRINT_HIGHLIGHT("Master host: " + getMasterHost());
+
+        signed short serverFD = getMasterServerFD();
+
         inet_pton(AF_INET, getMasterHost().c_str(), &master_addr.sin_addr);
-        if (connect(getMasterServerFD(), (struct sockaddr *) &master_addr, sizeof(master_addr)) != 0) {
+        if (connect(serverFD, (struct sockaddr *) &master_addr, sizeof(master_addr)) != 0) {
             PRINT_ERROR("Error connecting");
             return;
         }
 
         std::string response = "*1\r\n$4\r\nPING\r\n";
-        send(getMasterServerFD(), response.c_str(), response.size(), 0);
+        send(serverFD, response.c_str(), response.size(), 0);
 
-        // Wait for "PONG" from the master
-        char buffer[1024] = {0};
-        signed int bytesReceived {};
-
-        bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
-        buffer[bytesReceived] = '\0';
-        response = ProtocolUtils::constructProtocol({"REPLCONF", "listening-port", std::to_string(getPort())}, true);
-        send(getMasterServerFD(), response.c_str(), response.size(), 0);
-
-        bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
-        buffer[bytesReceived] = '\0';
-        response = ProtocolUtils::constructProtocol({"REPLCONF", "capa", "psync2"}, true);
-        send(getMasterServerFD(), response.c_str(), response.size(), 0);
-
-        // Step 3
-
-        bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
-        buffer[bytesReceived] = '\0';
-        response = ProtocolUtils::constructProtocol({"PSYNC", "?", "-1"}, true);
-        send(getMasterServerFD(), response.c_str(), response.size(), 0);
-
-        bytesReceived = recv(getMasterServerFD(), buffer, sizeof(buffer) - 1, 0);
-        buffer[bytesReceived] = '\0';
-        response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
-        send(getMasterServerFD(), response.c_str(), response.size(), 0);
-
-        handShakedWithMaster = true;
-        PRINT_SUCCESS("Hand shake stablished: " + std::to_string(getMasterServerFD()));
-
-        std::thread(ConnManager::handle_connection, this, getMasterServerFD()).detach();
+        replicaHand = true;
+        std::thread(ConnManager::handle_connection, this, serverFD).detach();
     }
 
     void Slave::assignMaster(Master* master) {
@@ -73,7 +51,7 @@ namespace RemusConn {
         assignMaster(master->getPort(), master->getServerFD(), master->getHost());
     }
 
-    void Slave::assignMaster(signed short port, signed short serverFD, std::string host) {
+    void Slave::assignMaster(signed short port, short serverFD, std::string host) {
         masterPort = port;
         masterServerFD = serverFD;
         masterHost = host == "localhost" ? "127.0.0.1" : host;

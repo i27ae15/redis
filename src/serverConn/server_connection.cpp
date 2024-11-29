@@ -21,6 +21,9 @@ namespace RemusConn {
     host {host},
     dbManager {nullptr},
     protocolIdr {nullptr},
+    replicaHand {},
+    rs {},
+    sendDBFile {},
     id {"8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"}
     {
 
@@ -55,11 +58,33 @@ namespace RemusConn {
 
     std::string ConnectionManager::getDbFile() {return dbManager->getDbFile();}
 
+    void ConnectionManager::print(std::string msg, std::string color) {
+        if (getRole() == "slave") {
+            msg = "REPLICA SAYS: " + msg;
+            PRINT_COLOR(color, msg);
+
+        } else if (getRole() == "master") {
+            msg = "MASTER SAYS: " + msg;
+            PRINT_COLOR(color, msg);
+        }
+    }
+
+    void ConnectionManager::print(std::string msg) {
+        if (getRole() == "slave") {
+            print(msg, BLUE);
+        } else if (getRole() == "master") {
+            print(msg, MAGENTA);
+        }
+    }
+
     ProtocolID::ProtocolIdentifier* ConnectionManager::getProtocolIdr() {
 
-        PRINT_HIGHLIGHT("In manager");
+        print("In get protocol idr");
 
         if (!protocolIdr->getInProcess()) return protocolIdr;
+
+        print("In get protocol idr 2");
+
 
         for (ProtocolID::ProtocolIdentifier* ptc : protocols) {
             if (!ptc->getInProcess()) {
@@ -68,7 +93,7 @@ namespace RemusConn {
             }
         }
 
-        PRINT_WARNING("ALL WORKERS ARE BUSY, CREATING NEW ONE");
+        print("ALL WORKERS ARE BUSY, CREATING NEW ONE");
         setProtocolIdr(new ProtocolID::ProtocolIdentifier(this), true);
         return protocolIdr;
     }
