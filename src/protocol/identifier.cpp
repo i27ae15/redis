@@ -96,69 +96,6 @@ namespace ProtocolID {
         return foundProtocol;
     }
 
-    // DEPRECATED
-    size_t ProtocolIdentifier::searchProtocol(std::string search_word) {
-
-        size_t index {};
-        index = buffer.find(search_word);
-
-        if (index != std::string::npos) protocol = search_word;
-        return index;
-
-    }
-
-    // DEPRECATED
-    std::string ProtocolIdentifier::getVariable(
-        size_t starts_at, bool cleanFrontDigits, signed short avoidNChars,
-        char listenOnSymbol, char endsOnSymbol
-    ) {
-        // This should be better implemeted
-        // check the cleanedBuffer
-        std::regex not_digit("[^0-9]");
-        bool listen = false;
-
-        std::string variable {};
-
-        for (size_t i = starts_at; i < buffer.size(); i++) {
-            char current = buffer[i];
-
-            if (!listen && current == listenOnSymbol) {
-                listen = true;
-                if (listenOnSymbol == '$') continue;
-            }
-
-            if (listen && cleanFrontDigits) {
-                if (!std::regex_match(std::string(1, current), not_digit)) continue;
-                cleanFrontDigits = false;
-            }
-
-            if (listen && avoidNChars > 0) {
-                avoidNChars--;
-                continue;
-            }
-
-            if (listen && current == endsOnSymbol) break;
-            if (listen) variable += current;
-        }
-
-        return variable;
-    }
-
-    std::pair<bool, size_t> ProtocolIdentifier::getExpireTime() {
-        // Example
-        // *5$3set$6orange$9blueberry$2px$3100
-        size_t index = searchProtocol("px");
-        if (index == std::string::npos) return {false, 0};
-
-        index += 4; // px.size + $n.size
-        std::string nStr {};
-        for (size_t i = index; i < buffer.size(); i++) {
-            nStr += buffer[i];
-        }
-
-        return {true, std::stoi(nStr)};
-    }
-
     bool ProtocolIdentifier::actionForPing() {
 
         if (splittedBuffer[0] != PING) return false;

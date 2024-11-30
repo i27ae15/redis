@@ -70,8 +70,6 @@ namespace ProtocolID {
         std::string rawBuffer;
         std::vector<std::string> splittedBuffer;
 
-        std::pair<bool, size_t> getExpireTime();
-
         void setSplitedBuffer();
 
         std::unordered_map<std::string, std::function<bool()>> checkMethods;
@@ -87,15 +85,5 @@ namespace ProtocolID {
         bool actionForReplConfi();
         bool actionForPsync();
         bool actionForFullResync();
-
-        size_t searchProtocol(std::string search_word);
-        std::string getVariable(
-            size_t starts_at,
-            bool cleanFrontDigits = true,
-            signed short avoidNChars = 0,
-            char listenOnSymbol = '$',
-            char endsOnSymbol = '$'
-        );
-
     };
 }
