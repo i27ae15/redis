@@ -9,6 +9,7 @@
 #include <atomic>
 #include <algorithm>
 #include <functional>
+#include <map>
 
 #include <cache.h>
 #include <utils.h>
@@ -55,6 +56,8 @@ namespace ProtocolID {
         bool getInProcess();
         void setInProcess(bool value);
 
+        std::string getIdFromBuffer();
+
         private:
 
         bool inProcess;
@@ -71,18 +74,19 @@ namespace ProtocolID {
 
         void setSplitedBuffer();
 
-        bool (ProtocolIdentifier::*checkMethods[11])();
-        bool identifyPing();
-        bool identifyEcho();
-        bool identifySet();
-        bool identifyGetNoDB();
-        bool identifyGet();
-        bool identifyConfig();
-        bool identifyKeys();
-        bool identifyInfo();
-        bool identifyReplConfi();
-        bool identifyPsync();
-        bool identifyFullResync();
+        std::unordered_map<std::string, std::function<bool()>> checkMethods;
+        bool actionForPing();
+        bool actionForEcho();
+        bool actionForSet();
+        bool actionForGet();
+        bool actionForGetNoDB();
+        bool actionForGetWithDB();
+        bool actionForConfig();
+        bool actionForKeys();
+        bool actionForInfo();
+        bool actionForReplConfi();
+        bool actionForPsync();
+        bool actionForFullResync();
 
         size_t searchProtocol(std::string search_word);
         std::string getVariable(

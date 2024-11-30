@@ -18,17 +18,16 @@ namespace ProtocolID {
     splittedBuffer {},
     rawBuffer {},
     checkMethods {
-        &ProtocolIdentifier::identifyPing,
-        &ProtocolIdentifier::identifyEcho,
-        &ProtocolIdentifier::identifySet,
-        &ProtocolIdentifier::identifyConfig,
-        &ProtocolIdentifier::identifyGet,
-        &ProtocolIdentifier::identifyGetNoDB,
-        &ProtocolIdentifier::identifyKeys,
-        &ProtocolIdentifier::identifyInfo,
-        &ProtocolIdentifier::identifyReplConfi,
-        &ProtocolIdentifier::identifyPsync,
-        &ProtocolIdentifier::identifyFullResync
+        {PING, [this]() { return actionForPing(); }},
+        {ECHO, [this]() { return actionForEcho(); }},
+        {SET, [this]() { return actionForSet(); }},
+        {GET, [this]() { return actionForGet(); }},
+        {CONFIG, [this]() { return actionForConfig(); }},
+        {KEYS, [this]() { return actionForKeys(); }},
+        {INFO, [this]() { return actionForInfo(); }},
+        {REPLCONF, [this]() { return actionForReplConfi(); }},
+        {PSYNC, [this]() { return actionForPsync(); }},
+        {FULLRESYNC, [this]() { return actionForFullResync(); }}
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {}
@@ -55,6 +54,15 @@ namespace ProtocolID {
         rObject = new ProtocolUtils::ReturnObject("+\r\n", 0, false);
     }
 
+    std::string ProtocolIdentifier::getIdFromBuffer() {
+        if (!splittedBuffer.size()) {
+            PRINT_ERROR("NO BUFFER TO WORK WITH");
+            throw std::runtime_error("");
+        }
+
+        return splittedBuffer[0];
+    }
+
     // Setters
 
     void ProtocolIdentifier::setInProcess(bool value) {
@@ -74,20 +82,18 @@ namespace ProtocolID {
         // Convert both strings to lowercase
         this->buffer = buffer;
         this->rawBuffer = rawBuffer;
+
         setSplitedBuffer();
 
-        // We should use a map for this
-        for (auto method : checkMethods) {
-            if ((this->*method)()) {
-                setInProcess(false);
-                return true;
-            }
+        bool foundProtocol {};
+        if (checkMethods.count(getIdFromBuffer())) {
+            foundProtocol = checkMethods[splittedBuffer[0]]();
         }
 
-        conn->print("Protocol could not be identified: " + buffer, RED);
-        setInProcess(false);
-        return false;
+        if (!foundProtocol) conn->print("Protocol could not be identified: " + buffer, RED);
 
+        setInProcess(false);
+        return foundProtocol;
     }
 
     // DEPRECATED
@@ -153,16 +159,15 @@ namespace ProtocolID {
         return {true, std::stoi(nStr)};
     }
 
-    bool ProtocolIdentifier::identifyPing() {
+    bool ProtocolIdentifier::actionForPing() {
 
         if (splittedBuffer[0] != PING) return false;
         rObject = new ProtocolUtils::ReturnObject("+PONG\r\n", 0);
+
         return true;
     }
 
-    bool ProtocolIdentifier::identifyEcho() {
-
-        if (splittedBuffer[0] != ECHO) return false;
+    bool ProtocolIdentifier::actionForEcho() {
 
         std::string &pre_echo = splittedBuffer[1];
         std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
@@ -171,9 +176,8 @@ namespace ProtocolID {
         return true;
     }
 
-    bool ProtocolIdentifier::identifySet() {
+    bool ProtocolIdentifier::actionForSet() {
         // *3$3set$9pineapple$6banana
-        if (splittedBuffer[0] != SET) return false;
 
         std::string &key = splittedBuffer[1];
         std::string &value = splittedBuffer[2];
@@ -200,10 +204,14 @@ namespace ProtocolID {
         return true;
     }
 
-    bool ProtocolIdentifier::identifyGet() {
+    bool ProtocolIdentifier::actionForGet() {
 
-        // Check if we get a db file.
-        if (conn->getDirName().size() == 0 || splittedBuffer[0] != GET) return false;
+        if (conn->getDirName().size() == 0) return actionForGetNoDB();
+
+        return actionForGetWithDB();
+    }
+
+    bool ProtocolIdentifier::actionForGetWithDB() {
 
         std::string key = splittedBuffer[1];
         RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
@@ -218,10 +226,7 @@ namespace ProtocolID {
         return true;
     }
 
-    bool ProtocolIdentifier::identifyGetNoDB() {
-
-        // Check if we have a db file.
-        if (conn->getDirName().size() > 0 || splittedBuffer[0] != GET) return false;
+    bool ProtocolIdentifier::actionForGetNoDB() {
 
         std::string key = splittedBuffer[1];
 
@@ -240,10 +245,10 @@ namespace ProtocolID {
         return true;
     }
 
-    bool ProtocolIdentifier::identifyConfig() {
+    bool ProtocolIdentifier::actionForConfig() {
         // client: $ redis-cli CONFIG GET dir
-        // identifyConfigGet : *3$6config$3get$3dir
-        if (splittedBuffer[0] != CONFIG || splittedBuffer[1] != GET) return false;
+        // actionForConfigGet : *3$6config$3get$3dir
+        if (splittedBuffer[1] != GET) return false;
 
         std::string& var = splittedBuffer[2];
         std::string response {};
@@ -257,14 +262,15 @@ namespace ProtocolID {
         }
 
         rObject = new ProtocolUtils::ReturnObject(response, 0);
+
         return true;
     }
 
-    bool ProtocolIdentifier::identifyKeys() {
+    bool ProtocolIdentifier::actionForKeys() {
         // Example of key
         // *2$4keys$1*
 
-        if (splittedBuffer[0] != KEYS || splittedBuffer[1] != "*") return false;
+        if (splittedBuffer[1] != "*") return false;
 
         std::vector<std::string> dbKeys {};
         RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
@@ -281,9 +287,7 @@ namespace ProtocolID {
         return true;
     }
 
-    bool ProtocolIdentifier::identifyInfo() {
-
-        if (splittedBuffer[0] != INFO) return false;
+    bool ProtocolIdentifier::actionForInfo() {
 
         std::string role = conn->getRole();
         std::transform(role.begin(), role.end(), role.begin(), ::tolower);
@@ -295,9 +299,7 @@ namespace ProtocolID {
         return true;
     }
 
-    bool ProtocolIdentifier::identifyReplConfi() {
-
-        if (splittedBuffer[0] != REPLCONF) return false;
+    bool ProtocolIdentifier::actionForReplConfi() {
 
         if (conn->getRole() == RemusConn::MASTER) {
             RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
@@ -322,25 +324,23 @@ namespace ProtocolID {
 
         std::string response = ProtocolUtils::constructProtocol({"OK"}, false);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
-        return true;
 
+        return true;
     }
 
-    bool ProtocolIdentifier::identifyPsync() {
-
-        if (splittedBuffer[0] != PSYNC) return false;
+    bool ProtocolIdentifier::actionForPsync() {
 
         rObject = new ProtocolUtils::ReturnObject("+FULLRESYNC "  + conn->getId() + " 0\r\n", 0);
         conn->sendDBFile = true;
+
         return true;
     }
 
-    bool ProtocolIdentifier::identifyFullResync() {
-
-        if (splittedBuffer[0] != FULLRESYNC) return false;
+    bool ProtocolIdentifier::actionForFullResync() {
 
         std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
         rObject = new ProtocolUtils::ReturnObject(response, 0, true);
+
         return true;
     }
 
