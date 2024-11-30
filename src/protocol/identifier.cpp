@@ -271,7 +271,6 @@ namespace ProtocolID {
         if (splittedBuffer[1] != GETACK) return false;
 
         std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, ProtocolTypes::ResponseType::ARRAY);
-        // response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n";
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
