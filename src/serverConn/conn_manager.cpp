@@ -25,16 +25,17 @@ namespace ConnManager {
 
     bool replicaHandShake(RemusConn::ConnectionManager* conn, std::string buffer, int clientFD) {
         std::string response {};
+
         if (conn->rs == 0) {
             // Response after pong
             if (buffer.substr(0, 4) != ProtocolID::PONG) return false;
-            response = ProtocolUtils::constructProtocol({"REPLCONF", "listening-port", std::to_string(conn->getPort())}, true);
+            response = ProtocolUtils::constructProtocol({"REPLCONF", "listening-port", std::to_string(conn->getPort())}, ProtocolTypes::ResponseType::ARRAY);
             send(clientFD, response.c_str(), response.size(), 0);
             conn->rs++;
 
         } else if (conn->rs == 1) {
             // Response after first OK
-            response = ProtocolUtils::constructProtocol({"REPLCONF", "capa", "psync2"}, true);
+            response = ProtocolUtils::constructProtocol({"REPLCONF", "capa", "psync2"}, ProtocolTypes::ResponseType::ARRAY);
             send(clientFD, response.c_str(), response.size(), 0);
             conn->rs++;
 
@@ -42,7 +43,7 @@ namespace ConnManager {
             // Response after second OK
             conn->rs++;
             conn->replicaHand = false;
-            response = ProtocolUtils::constructProtocol({"PSYNC", "?", "-1"}, true);
+            response = ProtocolUtils::constructProtocol({"PSYNC", "?", "-1"}, ProtocolTypes::ResponseType::ARRAY);
             send(clientFD, response.c_str(), response.size(), 0);
             PRINT_SUCCESS("Hand shake stablished: " + std::to_string(clientFD));
         }
@@ -58,7 +59,8 @@ namespace ConnManager {
 
         conn->getProtocolIdr()->identifyProtocol(rawBuffer, buffer);
         ProtocolUtils::ReturnObject* rObject = conn->getProtocolIdr()->getRObject();
-        send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
+
+        if (rObject->sendResponse) send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
 
         if (conn->sendDBFile) {
             signed short fileLength = conn->getDbFile().size();
@@ -81,10 +83,10 @@ namespace ConnManager {
 
             unsigned char byte = static_cast<unsigned char>(buffer[i]);
 
-            if (byte == RemusParser::ARRAY) {
+            if (byte == ProtocolTypes::ARRAY) {
                 f = RemusParser::parserArray(++i, buffer);
             }
-            else if (byte == RemusParser::BSTRING) {
+            else if (byte == ProtocolTypes::SSTRING) {
                 f = RemusParser::parserString(++i, buffer, size);
             } else {
                 continue;

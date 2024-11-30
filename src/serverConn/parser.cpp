@@ -7,6 +7,7 @@
 #include <ctype.h>
 
 #include <serverConn/parser.h>
+#include <protocol/utils.h>
 
 #include <utils.h>
 
@@ -58,7 +59,7 @@ namespace RemusParser {
         while (bufferSize > index) {
             byte = static_cast<unsigned char>(buffer[index++]);
             if (byte == '\n' || byte == '\r') continue;
-            if (byte == ARRAY || byte == BSTRING) break;
+            if (byte == ProtocolTypes::ARRAY || byte == ProtocolTypes::BSTRING) break;
             found += byte;
         }
         index -= 2;

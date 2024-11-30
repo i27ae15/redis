@@ -25,7 +25,7 @@ namespace ProtocolID {
         {CONFIG, [this]() { return actionForConfig(); }},
         {KEYS, [this]() { return actionForKeys(); }},
         {INFO, [this]() { return actionForInfo(); }},
-        {REPLCONF, [this]() { return actionForReplConfi(); }},
+        {REPLCONF, [this]() { return actionForReplConf(); }},
         {PSYNC, [this]() { return actionForPsync(); }},
         {FULLRESYNC, [this]() { return actionForFullResync(); }}
     },
@@ -76,10 +76,8 @@ namespace ProtocolID {
     bool ProtocolIdentifier::identifyProtocol(const std::string rawBuffer, const std::string buffer, bool clearRObject) {
 
         setInProcess(true);
-
         if (clearRObject) cleanResponseObject();
 
-        // Convert both strings to lowercase
         this->buffer = buffer;
         this->rawBuffer = rawBuffer;
 
@@ -99,16 +97,17 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForPing() {
 
         if (splittedBuffer[0] != PING) return false;
-        rObject = new ProtocolUtils::ReturnObject("+PONG\r\n", 0);
+        rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::PONG_R);
 
         return true;
     }
 
     bool ProtocolIdentifier::actionForEcho() {
 
-        std::string &pre_echo = splittedBuffer[1];
-        std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
-        rObject = new ProtocolUtils::ReturnObject(echo, 0);
+        std::string &toEcho = splittedBuffer[1];
+        // std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
+        std::string response = ProtocolUtils::constructProtocol({toEcho}, ProtocolTypes::ResponseType::RBSTRING);
+        rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;
     }
@@ -132,8 +131,11 @@ namespace ProtocolID {
 
         // PRINT_SUCCESS("VALUE SET FOR KEY: " + key + " : " + value);
 
-        rObject = new ProtocolUtils::ReturnObject("+OK\r\n", 0);
-        if (conn->getRole() == RemusConn::SLAVE) return true;
+        rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
+        if (conn->getRole() == RemusConn::SLAVE) {
+            rObject->sendResponse = false;
+            return true;
+        }
 
         RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
         masterConn->propageProtocolToReplica(rawBuffer);
@@ -154,9 +156,9 @@ namespace ProtocolID {
         RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
 
         if (db->keyValue[key].expired) {
-            rObject = new ProtocolUtils::ReturnObject("$-1\r\n", 0);
+            rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
         } else {
-            std::string response = ProtocolUtils::constructProtocol({db->keyValue[key].value}, false);
+            std::string response = ProtocolUtils::constructProtocol({db->keyValue[key].value}, ProtocolTypes::ResponseType::RBSTRING);
             rObject = new ProtocolUtils::ReturnObject(response, 0);
         }
 
@@ -172,11 +174,11 @@ namespace ProtocolID {
 
         if (!value.has_value()) {
             PRINT_ERROR("KEY: " + key + " HAS NO VALUE");
-            rObject = new ProtocolUtils::ReturnObject("$-1\r\n", 0);
+            rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
             return false;
         }
 
-        std::string response = ProtocolUtils::constructProtocol({value.value()}, false);
+        std::string response = ProtocolUtils::constructProtocol({value.value()}, ProtocolTypes::ResponseType::RBSTRING);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
@@ -188,16 +190,15 @@ namespace ProtocolID {
         if (splittedBuffer[1] != GET) return false;
 
         std::string& var = splittedBuffer[2];
-        std::string response {};
-        if (var == "dir") {
-            response = ProtocolUtils::constructProtocol(
-            {"dir", conn->getDirName()}, true);
+        std::vector<std::string> vars {};
 
+        if (var == "dir") {
+            vars = {"dir", conn->getDirName()};
         } else if (var == "dbfilename") {
-            response = ProtocolUtils::constructProtocol(
-            {"dbfilename", conn->getFileName()}, true);
+            vars = {"dbfilename", conn->getFileName()};
         }
 
+        std::string response = ProtocolUtils::constructProtocol(vars, ProtocolTypes::ResponseType::ARRAY);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
@@ -216,10 +217,10 @@ namespace ProtocolID {
         std::map<std::string, RemusDBUtils::InfoBlock>& keys = db->keyValue;
         for (std::map<std::string, RemusDBUtils::InfoBlock>::iterator it = keys.begin(); it != keys.end(); ++it) {
             dbKeys.push_back(it->first);
-        }
+         }
 
-        std::string response = ProtocolUtils::constructProtocol(dbKeys, true);
-        rObject = new ProtocolUtils::ReturnObject(response, 0);
+        std::string response = ProtocolUtils::constructProtocol(dbKeys, ProtocolTypes::ResponseType::ARRAY);
+        rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;
     }
@@ -230,44 +231,57 @@ namespace ProtocolID {
         std::transform(role.begin(), role.end(), role.begin(), ::tolower);
 
         std::string response = ProtocolUtils::constructProtocol(
-        {"role:" + role, "master_repl_offset:0", "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"},
-        false, true);
-        rObject = new ProtocolUtils::ReturnObject(response, 0);
+            {"role:" + role, "master_repl_offset:0", "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"},
+            ProtocolTypes::ResponseType::BSTRING
+        );
+
+        rObject = new ProtocolUtils::ReturnObject(response);
+
         return true;
     }
 
-    bool ProtocolIdentifier::actionForReplConfi() {
+    bool ProtocolIdentifier::actionForReplConf() {
 
-        if (conn->getRole() == RemusConn::MASTER) {
-            RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+        if (conn->getRole() == RemusConn::MASTER) return actionForReplConfMaster();
+        if (conn->getRole() == RemusConn::SLAVE) return actionForReplConfSlave();
 
-            if (!masterConn->inHandShakeWithReplica) {
-                masterConn->inHandShakeWithReplica = true;
-                masterConn->createCurrentReplicaConn();
-                // the first replConf is the port
-                std::string port = splittedBuffer[2];
-                masterConn->setCurrentReplicaPort(std::stoi(port));
-            }
+        return false;
+    }
 
-        } else if (conn->getRole() == RemusConn::SLAVE) {
-            RemusConn::Slave* masterConn = static_cast<RemusConn::Slave*>(conn);
-            if (splittedBuffer[1] != GETACK) return false;
-            std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
-            response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n";
-            rObject = new ProtocolUtils::ReturnObject(response, 0);
-            return true;
+    bool ProtocolIdentifier::actionForReplConfMaster() {
+
+        RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+
+        if (!masterConn->inHandShakeWithReplica) {
+            masterConn->inHandShakeWithReplica = true;
+            masterConn->createCurrentReplicaConn();
+            // the first replConf is the port
+            std::string port = splittedBuffer[2];
+            masterConn->setCurrentReplicaPort(std::stoi(port));
         }
 
+        rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
 
-        std::string response = ProtocolUtils::constructProtocol({"OK"}, false);
+        return true;
+    }
+
+    bool ProtocolIdentifier::actionForReplConfSlave() {
+
+        RemusConn::Slave* masterConn = static_cast<RemusConn::Slave*>(conn);
+        if (splittedBuffer[1] != GETACK) return false;
+
+        std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, ProtocolTypes::ResponseType::ARRAY);
+        // response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n";
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
+
     }
 
     bool ProtocolIdentifier::actionForPsync() {
 
-        rObject = new ProtocolUtils::ReturnObject("+FULLRESYNC "  + conn->getId() + " 0\r\n", 0);
+        std::string response = ProtocolUtils::constructProtocol({"+FULLRESYNC", conn->getId(), "0"}, ProtocolTypes::ResponseType::SSTRING);
+        rObject = new ProtocolUtils::ReturnObject(response);
         conn->sendDBFile = true;
 
         return true;
@@ -275,7 +289,7 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForFullResync() {
 
-        std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
+        std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, ProtocolTypes::ResponseType::ARRAY);
         rObject = new ProtocolUtils::ReturnObject(response, 0, true);
 
         return true;

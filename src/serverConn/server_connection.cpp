@@ -12,19 +12,19 @@ namespace RemusConn {
     ConnectionManager::ConnectionManager(
         signed short port, std::string role, std::string host,
         std::string dirName, std::string fileName) :
-    serverFD {},
-    connectionStatus {true},
-    port {port},
-    dirName {dirName},
-    fileName {fileName},
-    role {role},
-    host {host},
-    dbManager {nullptr},
-    protocolIdr {nullptr},
-    replicaHand {},
-    rs {},
-    sendDBFile {},
-    id {"8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"}
+        rs {},
+        serverFD {},
+        port {port},
+        role {role},
+        host {host},
+        sendDBFile {},
+        replicaHand {},
+        dirName {dirName},
+        fileName {fileName},
+        dbManager {nullptr},
+        protocolIdr {nullptr},
+        connectionStatus {true},
+        id {"8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"}
     {
 
         createSocket();

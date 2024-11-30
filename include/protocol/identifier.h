@@ -82,7 +82,9 @@ namespace ProtocolID {
         bool actionForConfig();
         bool actionForKeys();
         bool actionForInfo();
-        bool actionForReplConfi();
+        bool actionForReplConf();
+        bool actionForReplConfMaster();
+        bool actionForReplConfSlave();
         bool actionForPsync();
         bool actionForFullResync();
     };
