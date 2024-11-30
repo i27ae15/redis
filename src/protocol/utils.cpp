@@ -10,18 +10,30 @@ namespace ProtocolUtils {
         this->sendResponse = sendResponse;
     }
 
-    std::string constructProtocol(std::vector<std::string> args, ProtocolTypes::ResponseType rType) {
+    std::string constructProtocol(const std::vector<std::string> args, ProtocolTypes::ResponseType rType) {
 
         if (rType == ProtocolTypes::ResponseType::ARRAY) return constructArray(args);
         if (rType == ProtocolTypes::ResponseType::SSTRING) return constructSimpleString(args);
         if (rType == ProtocolTypes::ResponseType::RBSTRING) return constructRestBulkString(args);
         if (rType == ProtocolTypes::ResponseType::BSTRING) return constructBulkString(args);
+        if (rType == ProtocolTypes::ResponseType::INTEGER) return constructInteger(args);
 
         PRINT_ERROR("ERROR CONSTRUCTING PROTOCOL - NO VALID PROTOCOL PASSED: " + std::to_string(ProtocolTypes::BSTRING));
         return "";
     }
 
-    std::string constructBulkString(std::vector<std::string> &args) {
+    std::string constructInteger(const std::vector<std::string> args) {
+
+        std::string response {};
+
+        for (std::string arg : args) {
+            response += ":" + arg + "\r\n";
+        }
+
+        return response;
+    }
+
+    std::string constructBulkString(const std::vector<std::string> args) {
 
         std::string response {};
 
@@ -33,7 +45,7 @@ namespace ProtocolUtils {
     }
 
 
-    std::string constructRestBulkString(std::vector<std::string> &args) {
+    std::string constructRestBulkString(const std::vector<std::string> args) {
 
         std::string response {};
 
@@ -44,7 +56,7 @@ namespace ProtocolUtils {
         return response;
     }
 
-    std::string constructSimpleString(std::vector<std::string> &args) {
+    std::string constructSimpleString(const std::vector<std::string> args) {
 
         std::string response = "+";
 
@@ -56,7 +68,7 @@ namespace ProtocolUtils {
         return response;
     }
 
-    std::string constructArray(std::vector<std::string> &args) {
+    std::string constructArray(const std::vector<std::string> args) {
 
         std::string response = '*' + std::to_string(args.size()) + "\r\n";
 

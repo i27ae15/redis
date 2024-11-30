@@ -35,9 +35,10 @@ namespace ProtocolUtils {
         ReturnObject(std::string return_value, char behavior = 0, bool sendResponse = true);
     };
 
-    std::string constructArray(std::vector<std::string> &args);
-    std::string constructBulkString(std::vector<std::string> &args);
-    std::string constructRestBulkString(std::vector<std::string> &args);
-    std::string constructSimpleString(std::vector<std::string> &args);
-    std::string constructProtocol(std::vector<std::string> args, ProtocolTypes::ResponseType rType);
+    std::string constructArray(const std::vector<std::string> args);
+    std::string constructInteger(const std::vector<std::string> args);
+    std::string constructBulkString(const std::vector<std::string> args);
+    std::string constructRestBulkString(const std::vector<std::string> args);
+    std::string constructSimpleString(const std::vector<std::string> args);
+    std::string constructProtocol(const std::vector<std::string> args, ProtocolTypes::ResponseType rType);
 }

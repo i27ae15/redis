@@ -27,7 +27,8 @@ namespace ProtocolID {
         {INFO, [this]() { return actionForInfo(); }},
         {REPLCONF, [this]() { return actionForReplConf(); }},
         {PSYNC, [this]() { return actionForPsync(); }},
-        {FULLRESYNC, [this]() { return actionForFullResync(); }}
+        {FULLRESYNC, [this]() { return actionForFullResync(); }},
+        {WAIT, [this]() { return actionForWait(); }}
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {}
@@ -302,6 +303,15 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForFullResync() {
 
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R, 0, false);
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::actionForWait() {
+
+        std::string response = ProtocolUtils::constructInteger({"0"});
+        rObject = new ProtocolUtils::ReturnObject(response);
+
         return true;
     }
 

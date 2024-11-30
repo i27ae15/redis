@@ -56,7 +56,6 @@ namespace ConnManager {
     }
 
     void handleResponse(RemusConn::ConnectionManager* conn, std::string rawBuffer, RemusParser::ParseCommand command, int clientFD) {
-        PRINT_SUCCESS(command.command);
 
         if (conn->replicaHand) {
             if (replicaHandShake(conn, command.command, clientFD)) return;
@@ -98,8 +97,6 @@ namespace ConnManager {
             }
 
             // TODO: Add possible to listen on $
-            PRINT_SUCCESS(command.command);
-
             std::lock_guard<std::mutex> lock(qMutex);
             commandQueue.push(command);
         }
@@ -137,7 +134,7 @@ namespace ConnManager {
 
             if (bytesReceived < BUFFER_SIZE) buffer[bytesReceived] = '\0';
 
-            RemusUtils::printMixedBytes(buffer, bytesReceived);
+            // RemusUtils::printMixedBytes(buffer, bytesReceived);
             responseRouter(buffer, bytesReceived, conn, clientFD);
         }
         close(clientFD);
