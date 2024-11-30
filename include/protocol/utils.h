@@ -3,12 +3,12 @@
 #include <vector>
 
 namespace ProtocolTypes {
-    constexpr signed char ARRAY = '*';         // Arrays
-    constexpr signed char BSTRING = '$';       // Bulk Strings
-    constexpr signed char RBSTRING = 'R';      // Rest Bulk Strings
-    constexpr signed char SSTRING = '+';       // Simple Strings
-    constexpr signed char ERROR = '-';         // Errors
-    constexpr signed char INTEGER = ':';       // Integers
+    constexpr unsigned char ARRAY = '*';         // Arrays
+    constexpr unsigned char BSTRING = '$';       // Bulk Strings
+    constexpr unsigned char RBSTRING = 'R';      // Rest Bulk Strings
+    constexpr unsigned char SSTRING = '+';       // Simple Strings
+    constexpr unsigned char ERROR = '-';         // Errors
+    constexpr unsigned char INTEGER = ':';       // Integers
 
     constexpr const char* PONG_R = "+PONG\r\n";
     constexpr const char* OK_R = "+OK\r\n";

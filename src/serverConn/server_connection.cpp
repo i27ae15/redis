@@ -10,7 +10,7 @@
 namespace RemusConn {
 
     ConnectionManager::ConnectionManager(
-        signed short port, std::string role, std::string host,
+        unsigned short port, std::string role, std::string host,
         std::string dirName, std::string fileName) :
         rs {},
         serverFD {},
@@ -40,9 +40,9 @@ namespace RemusConn {
 
     // GETTERS
 
-    signed short ConnectionManager::getServerFD() {return serverFD;}
+    unsigned short ConnectionManager::getServerFD() {return serverFD;}
 
-    signed short ConnectionManager::getPort() {return port;}
+    unsigned short ConnectionManager::getPort() {return port;}
 
     bool ConnectionManager::getConnectionStatus() {return connectionStatus;}
 
@@ -57,6 +57,14 @@ namespace RemusConn {
     std::string ConnectionManager::getId() {return id;}
 
     std::string ConnectionManager::getDbFile() {return dbManager->getDbFile();}
+
+    unsigned int ConnectionManager::getBytesProcessed() {return bytesProcessed;}
+
+    // SETTERS
+
+    void ConnectionManager::addBytesProcessed(const std::string &bytes) {
+        bytesProcessed += bytes.size();
+    }
 
     void ConnectionManager::print(std::string msg, std::string color) {
         if (getRole() == RemusConn::SLAVE) {

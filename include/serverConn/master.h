@@ -7,15 +7,15 @@ namespace RemusConn {
     class Master : public ConnectionManager {
 
         public:
-            Master(signed short port, std::string host,
+            Master(unsigned short port, std::string host,
              std::string dirName = "", std::string fileName = "");
 
 
             void propageProtocolToReplica(const std::string& buffer);
 
             void createCurrentReplicaConn();
-            void setCurrentReplicaPort(signed short value);
-            void setCurrentReplicaServerFd(signed short value);
+            void setCurrentReplicaPort(unsigned short value);
+            void setCurrentReplicaServerFd(unsigned short value);
             void addAndCleanCurrentReplicaConn();
 
             bool inHandShakeWithReplica;

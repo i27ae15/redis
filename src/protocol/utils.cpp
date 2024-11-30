@@ -19,22 +19,9 @@ namespace ProtocolUtils {
 
         PRINT_ERROR("ERROR CONSTRUCTING PROTOCOL - NO VALID PROTOCOL PASSED: " + std::to_string(ProtocolTypes::BSTRING));
         return "";
-
-        // for (std::string arg : args) {
-        //     if (asBulkString) {
-        //         response += arg;
-        //     } else {
-        //         response += "$" + std::to_string(arg.size()) + "\r\n" + arg + "\r\n";
-        //     }
-
-        // }
-
-        // if (asBulkString) response = "$" + std::to_string(response.size()) + "\r\n" + response + "\r\n";
-        // return response;
     }
 
     std::string constructBulkString(std::vector<std::string> &args) {
-        // $<length>\r\n<data>\r\n
 
         std::string response {};
 

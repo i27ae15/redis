@@ -63,7 +63,7 @@ namespace ConnManager {
         if (rObject->sendResponse) send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
 
         if (conn->sendDBFile) {
-            signed short fileLength = conn->getDbFile().size();
+            unsigned short fileLength = conn->getDbFile().size();
             rObject = new ProtocolUtils::ReturnObject("$" + std::to_string(fileLength) + "\r\n" + conn->getDbFile(), 0);
             send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
             conn->sendDBFile = false;

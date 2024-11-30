@@ -33,10 +33,24 @@ namespace RemusConn {
 
         public:
 
+        ConnectionManager(
+            unsigned short port, std::string role, std::string host,
+            std::string dirName = "", std::string fileName = ""
+        );
+
+        int rs;
+        bool sendDBFile;
+        bool replicaHand;
+
+        // Methods
+
+        virtual ~ConnectionManager();
+
         // Getters
 
-        signed short getServerFD();
-        signed short getPort();
+        unsigned short getServerFD();
+        unsigned short getPort();
+        unsigned int getBytesProcessed();
 
         bool getConnectionStatus();
 
@@ -45,30 +59,28 @@ namespace RemusConn {
         std::string getFileName();
         std::string getId();
 
-        ConnectionManager(
-            signed short port, std::string role, std::string host,
-            std::string dirName = "", std::string fileName = ""
-        );
-
-        virtual ~ConnectionManager();
-
         void setProtocolIdr(ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite = false);
         void setDbManager(RemusDB::DbManager* dbManager, bool overWrite = false);
 
-        bool sendDBFile;
         std::string getDbFile();
 
         ProtocolID::ProtocolIdentifier* getProtocolIdr();
         RemusDB::DbManager* getDbManager();
         std::string getRole();
 
+        // Setters
+
+        void addBytesProcessed(const std::string &bytes);
+
+        // Utilities
+
         void print(std::string msg);
         void print(std::string msg, std::string color);
 
-        bool replicaHand;
-        int rs;
 
         private:
+
+            unsigned int bytesProcessed;
 
             const std::string id;
 
@@ -82,8 +94,8 @@ namespace RemusConn {
             std::string role;
             std::string host;
 
-            signed short port;
-            signed short serverFD;
+            unsigned short port;
+            unsigned short serverFD;
 
             bool connectionStatus;
 

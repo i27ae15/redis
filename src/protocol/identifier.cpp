@@ -90,6 +90,8 @@ namespace ProtocolID {
 
         if (!foundProtocol) conn->print("Protocol could not be identified: " + buffer, RED);
 
+        conn->addBytesProcessed(this->rawBuffer);
+
         setInProcess(false);
         return foundProtocol;
     }
@@ -270,11 +272,10 @@ namespace ProtocolID {
         RemusConn::Slave* masterConn = static_cast<RemusConn::Slave*>(conn);
         if (splittedBuffer[1] != GETACK) return false;
 
-        std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, ProtocolTypes::ResponseType::ARRAY);
+        std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", std::to_string(conn->getBytesProcessed())}, ProtocolTypes::ResponseType::ARRAY);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
-
     }
 
     bool ProtocolIdentifier::actionForPsync() {

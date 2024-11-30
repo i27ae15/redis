@@ -15,14 +15,14 @@ namespace RemusConnStructs {
     };
 
     struct replicaConn {
-        signed short port;
-        signed short serverFD;
+        unsigned short port;
+        unsigned short serverFD;
     };
 
     struct connConfigs {
         std::vector<connConf> conns;
         std::string masterHost;
-        signed short masterPort;
+        unsigned short masterPort;
     };
 
 }

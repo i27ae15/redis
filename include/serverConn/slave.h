@@ -8,15 +8,15 @@ namespace RemusConn {
     class Slave : public ConnectionManager {
 
         public:
-            Slave(signed short port, std::string host,
+            Slave(unsigned short port, std::string host,
              std::string dirName = "", std::string fileName = "");
 
             void assignMaster(Master* master);
-            void assignMaster(signed short port, signed short serverFD, std::string host);
+            void assignMaster(unsigned short port, unsigned short serverFD, std::string host);
             void handShakeWithMaster();
 
-            signed short getMasterPort();
-            signed short getMasterServerFD();
+            unsigned short getMasterPort();
+            unsigned short getMasterServerFD();
 
             bool isInHandShake();
 
@@ -30,8 +30,8 @@ namespace RemusConn {
 
             bool handShakedWithMaster;
 
-            signed short handShakeStep;
-            signed short masterPort;
+            unsigned short handShakeStep;
+            unsigned short masterPort;
             short masterServerFD;
 
     };

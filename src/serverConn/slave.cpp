@@ -5,7 +5,7 @@
 
 namespace RemusConn {
 
-    Slave::Slave(signed short port, std::string host, std::string dirName, std::string fileName) :
+    Slave::Slave(unsigned short port, std::string host, std::string dirName, std::string fileName) :
     ConnectionManager(port, SLAVE, host, dirName, fileName),
     handShakedWithMaster {},
     master {nullptr}
@@ -27,7 +27,7 @@ namespace RemusConn {
         master_addr.sin_port = htons(getMasterPort());
         master_addr.sin_addr.s_addr = INADDR_ANY;
 
-        signed short serverFD = getMasterServerFD();
+        unsigned short serverFD = getMasterServerFD();
 
         inet_pton(AF_INET, getMasterHost().c_str(), &master_addr.sin_addr);
         if (connect(serverFD, (struct sockaddr *) &master_addr, sizeof(master_addr)) != 0) {
@@ -47,7 +47,7 @@ namespace RemusConn {
         assignMaster(master->getPort(), master->getServerFD(), master->getHost());
     }
 
-    void Slave::assignMaster(signed short port, short serverFD, std::string host) {
+    void Slave::assignMaster(unsigned short port, unsigned short serverFD, std::string host) {
         masterPort = port;
         masterServerFD = serverFD;
         masterHost = host == "localhost" ? "127.0.0.1" : host;
@@ -57,11 +57,11 @@ namespace RemusConn {
         return masterHost;
     }
 
-    signed short Slave::getMasterPort() {
+    unsigned short Slave::getMasterPort() {
         return masterPort;
     }
 
-    signed short Slave::getMasterServerFD() {
+    unsigned short Slave::getMasterServerFD() {
 
         if (masterServerFD == -1) {
             masterServerFD = socket(AF_INET, SOCK_STREAM, 0);
