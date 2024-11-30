@@ -69,11 +69,11 @@ namespace ConnInitializer {
 
         // Check if we don't have a master
         if (!masterPort) {
-            configs.conns.emplace_back(RemusConnStructs::connConf{dirName, fileName, host, "master", port});
+            configs.conns.emplace_back(RemusConnStructs::connConf{dirName, fileName, host, RemusConn::MASTER, port});
             masterPort = port;
             masterHost = host;
         } else {
-            configs.conns.emplace_back(RemusConnStructs::connConf{dirName, fileName, host, "slave", port});
+            configs.conns.emplace_back(RemusConnStructs::connConf{dirName, fileName, host, RemusConn::SLAVE, port});
         }
 
         configs.masterHost = masterHost;
@@ -91,7 +91,7 @@ namespace ConnInitializer {
 
             RemusConn::ConnectionManager* newConn {nullptr};
 
-            if (connConf.role == "master") {
+            if (connConf.role == RemusConn::MASTER) {
                 newConn = new RemusConn::Master(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
             } else {
                 RemusConn::Slave* slaveConn = new RemusConn::Slave(connConf.port, connConf.host, connConf.dirName, connConf.fileName);

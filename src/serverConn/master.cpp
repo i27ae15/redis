@@ -5,7 +5,7 @@ namespace RemusConn {
     // Master Class
 
     Master::Master(signed short port, std::string host, std::string dirName, std::string fileName) :
-    ConnectionManager(port, "master", host, dirName, fileName),
+    ConnectionManager(port, MASTER, host, dirName, fileName),
     inHandShakeWithReplica {},
     currentReplicaConn {},
     replicaConns {}

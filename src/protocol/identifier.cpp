@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <serverConn/server_connection.h>
 #include <serverConn/master.h>
 #include <serverConn/slave.h>
@@ -13,7 +15,8 @@ namespace ProtocolID {
     ProtocolIdentifier::ProtocolIdentifier(RemusConn::ConnectionManager *conn) :
     conn {conn},
     protocol {},
-    cleaned_buffer {},
+    splittedBuffer {},
+    rawBuffer {},
     checkMethods {
         &ProtocolIdentifier::identifyPing,
         &ProtocolIdentifier::identifyEcho,
@@ -58,46 +61,47 @@ namespace ProtocolID {
         inProcess = value;
     }
 
-    bool ProtocolIdentifier::identifyProtocol(const std::string buffer, bool clearRObject) {
+    void ProtocolIdentifier::setSplitedBuffer() {
+        splittedBuffer = RemusUtils::splitString(buffer, " ");
+    }
+
+    bool ProtocolIdentifier::identifyProtocol(const std::string rawBuffer, const std::string buffer, bool clearRObject) {
 
         setInProcess(true);
 
-        if (clearRObject) cleanResponseObject(); cleaned_buffer = "";
-        std::regex non_printable("[^\\x20-\\x7E]+");
+        if (clearRObject) cleanResponseObject();
 
         // Convert both strings to lowercase
         this->buffer = buffer;
-        std::string buffer_data = buffer;
+        this->rawBuffer = rawBuffer;
+        setSplitedBuffer();
 
-        std::transform(buffer_data.begin(), buffer_data.end(), buffer_data.begin(), ::tolower);
-
-        // Replace non-printable characters with an empty string
-        cleaned_buffer = std::regex_replace(buffer_data, non_printable, "");
-
+        // We should use a map for this
         for (auto method : checkMethods) {
             if ((this->*method)()) {
-                conn->print("Protocol found: " + protocol, GREEN);
                 setInProcess(false);
                 return true;
             }
         }
 
-        conn->print("Protocol could not be identified: " + cleaned_buffer, RED);
+        conn->print("Protocol could not be identified: " + buffer, RED);
         setInProcess(false);
         return false;
 
     }
 
+    // DEPRECATED
     size_t ProtocolIdentifier::searchProtocol(std::string search_word) {
 
         size_t index {};
-        index = cleaned_buffer.find(search_word);
+        index = buffer.find(search_word);
 
         if (index != std::string::npos) protocol = search_word;
         return index;
 
     }
 
+    // DEPRECATED
     std::string ProtocolIdentifier::getVariable(
         size_t starts_at, bool cleanFrontDigits, signed short avoidNChars,
         char listenOnSymbol, char endsOnSymbol
@@ -109,8 +113,8 @@ namespace ProtocolID {
 
         std::string variable {};
 
-        for (size_t i = starts_at; i < cleaned_buffer.size(); i++) {
-            char current = cleaned_buffer[i];
+        for (size_t i = starts_at; i < buffer.size(); i++) {
+            char current = buffer[i];
 
             if (!listen && current == listenOnSymbol) {
                 listen = true;
@@ -142,8 +146,8 @@ namespace ProtocolID {
 
         index += 4; // px.size + $n.size
         std::string nStr {};
-        for (size_t i = index; i < cleaned_buffer.size(); i++) {
-            nStr += cleaned_buffer[i];
+        for (size_t i = index; i < buffer.size(); i++) {
+            nStr += buffer[i];
         }
 
         return {true, std::stoi(nStr)};
@@ -151,22 +155,16 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::identifyPing() {
 
-        size_t index = searchProtocol("ping");
-        if (index == std::string::npos) return false;
-
+        if (splittedBuffer[0] != PING) return false;
         rObject = new ProtocolUtils::ReturnObject("+PONG\r\n", 0);
         return true;
     }
 
     bool ProtocolIdentifier::identifyEcho() {
 
-        size_t index = searchProtocol("echo");
-        if (index == std::string::npos) return false;
+        if (splittedBuffer[0] != ECHO) return false;
 
-        std::regex not_digit("[^0-9]");
-        index += 4; // Plus echo.size
-
-        std::string pre_echo = getVariable(index);
+        std::string &pre_echo = splittedBuffer[1];
         std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
         rObject = new ProtocolUtils::ReturnObject(echo, 0);
 
@@ -175,32 +173,29 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::identifySet() {
         // *3$3set$9pineapple$6banana
-        size_t index = searchProtocol("set");
-        if (index == std::string::npos) return false;
+        if (splittedBuffer[0] != SET) return false;
 
-        std::vector<std::string> variables = RemusUtils::splitString(cleaned_buffer, "*");
+        std::string &key = splittedBuffer[1];
+        std::string &value = splittedBuffer[2];
 
-        for (std::string var : variables) {
-            index = var.find("set") + 3;
-            cleaned_buffer = var;
+        // Check if has px
+        std::pair<bool, size_t> expireTime {};
 
-            std::string key = getVariable(index);
-            std::string value = getVariable(index + key.size(), false, 1); // Not correct the sum, but will work
-
-            // Check if has px
-            std::pair<bool, size_t> expireTime = getExpireTime();
-
-            Cache::DataManager cache;
-            cache.setValue(key, value, expireTime.first, expireTime.second);
-
-            rObject = new ProtocolUtils::ReturnObject("+OK\r\n", 0);
+        if (splittedBuffer.size() > 3 && splittedBuffer[3] == "px") {
+            expireTime.second = std::stoi(splittedBuffer[4]);
+            expireTime.first = true;
         }
 
+        Cache::DataManager cache;
+        cache.setValue(key, value, expireTime.first, expireTime.second);
 
-        if (conn->getRole() == "slave") return true;
+        PRINT_SUCCESS("VALUE SET FOR KEY: " + key + " : " + value);
+
+        rObject = new ProtocolUtils::ReturnObject("+OK\r\n", 0);
+        if (conn->getRole() == RemusConn::SLAVE) return true;
 
         RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
-        masterConn->propageProtocolToReplica(buffer);
+        masterConn->propageProtocolToReplica(rawBuffer);
 
         return true;
     }
@@ -208,25 +203,16 @@ namespace ProtocolID {
     bool ProtocolIdentifier::identifyGet() {
 
         // Check if we get a db file.
-        if (conn->getDirName().size() == 0) return false;
+        if (conn->getDirName().size() == 0 || splittedBuffer[0] != GET) return false;
 
-        size_t index = searchProtocol("get");
-        if (index == std::string::npos) return false;
-
-        PRINT_WARNING(cleaned_buffer);
-
-        index += 3; // adding get
-        std::string key = getVariable(index);
-
+        std::string key = splittedBuffer[1];
         RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
 
         if (db->keyValue[key].expired) {
-            PRINT_SUCCESS("This shit expired");
             rObject = new ProtocolUtils::ReturnObject("$-1\r\n", 0);
         } else {
             std::string response = ProtocolUtils::constructProtocol({db->keyValue[key].value}, false);
             rObject = new ProtocolUtils::ReturnObject(response, 0);
-
         }
 
         return true;
@@ -235,19 +221,15 @@ namespace ProtocolID {
     bool ProtocolIdentifier::identifyGetNoDB() {
 
         // Check if we have a db file.
-        if (conn->getDirName().size() > 0) return false;
+        if (conn->getDirName().size() > 0 || splittedBuffer[0] != GET) return false;
 
-        // For the first stage, legacy for reading from a db file.
-        size_t index = searchProtocol("get");
-        if (index == std::string::npos) return false;
-
-        index += 3; // adding get
-        std::string key = getVariable(index);
+        std::string key = splittedBuffer[1];
 
         Cache::DataManager cache;
         std::optional<std::string> value = cache.getValue(key);
 
         if (!value.has_value()) {
+            PRINT_ERROR("KEY: " + key + " HAS NO VALUE");
             rObject = new ProtocolUtils::ReturnObject("$-1\r\n", 0);
             return false;
         }
@@ -261,16 +243,9 @@ namespace ProtocolID {
     bool ProtocolIdentifier::identifyConfig() {
         // client: $ redis-cli CONFIG GET dir
         // identifyConfigGet : *3$6config$3get$3dir
-        size_t index {};
+        if (splittedBuffer[0] != CONFIG || splittedBuffer[1] != GET) return false;
 
-        index = searchProtocol("config");
-        if (index == std::string::npos) return false;
-
-        index = searchProtocol("get");
-        if (index == std::string::npos) return false;
-
-        index += 3; // Adding get;
-        std::string var = getVariable(index);
+        std::string& var = splittedBuffer[2];
         std::string response {};
         if (var == "dir") {
             response = ProtocolUtils::constructProtocol(
@@ -289,14 +264,9 @@ namespace ProtocolID {
         // Example of key
         // *2$4keys$1*
 
-        size_t index = searchProtocol("keys");
-        if (index == std::string::npos) return false;
+        if (splittedBuffer[0] != KEYS || splittedBuffer[1] != "*") return false;
 
-        std::string var = getVariable(index);
         std::vector<std::string> dbKeys {};
-
-        if (var != "*") return false;
-
         RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
 
         // returning all the keys
@@ -313,43 +283,38 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::identifyInfo() {
 
-        size_t index = searchProtocol("info");
-        if (index == std::string::npos) return false;
+        if (splittedBuffer[0] != INFO) return false;
+
+        std::string role = conn->getRole();
+        std::transform(role.begin(), role.end(), role.begin(), ::tolower);
 
         std::string response = ProtocolUtils::constructProtocol(
-        {"role:" + conn->getRole(), "master_repl_offset:0", "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"},
+        {"role:" + role, "master_repl_offset:0", "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"},
         false, true);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
         return true;
     }
 
     bool ProtocolIdentifier::identifyReplConfi() {
-        PRINT_WARNING("On replica conf");
-        size_t index = searchProtocol("replconf");
-        if (index == std::string::npos) return false;
 
-        PRINT_HIGHLIGHT("On replica conf");
+        if (splittedBuffer[0] != REPLCONF) return false;
 
-        if (dynamic_cast<RemusConn::Master*>(conn)) {
+        if (conn->getRole() == RemusConn::MASTER) {
             RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
 
             if (!masterConn->inHandShakeWithReplica) {
                 masterConn->inHandShakeWithReplica = true;
                 masterConn->createCurrentReplicaConn();
                 // the first replConf is the port
-                std::string port = getVariable(index + 14, false, 1);
+                std::string port = splittedBuffer[2];
                 masterConn->setCurrentReplicaPort(std::stoi(port));
             }
-        } else {
-            PRINT_HIGHLIGHT("On replica conf");
+
+        } else if (conn->getRole() == RemusConn::SLAVE) {
             RemusConn::Slave* masterConn = static_cast<RemusConn::Slave*>(conn);
-            size_t index = searchProtocol("getack");
-            if (index == std::string::npos) return false;
-
-
+            if (splittedBuffer[1] != GETACK) return false;
             std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
             response = "*3\r\n$8\r\nREPLCONF\r\n$3\r\nACK\r\n$1\r\n0\r\n";
-            PRINT_HIGHLIGHT("adding response : " + response);
             rObject = new ProtocolUtils::ReturnObject(response, 0);
             return true;
         }
@@ -362,8 +327,8 @@ namespace ProtocolID {
     }
 
     bool ProtocolIdentifier::identifyPsync() {
-        size_t index = searchProtocol("psync");
-        if (index == std::string::npos) return false;
+
+        if (splittedBuffer[0] != PSYNC) return false;
 
         rObject = new ProtocolUtils::ReturnObject("+FULLRESYNC "  + conn->getId() + " 0\r\n", 0);
         conn->sendDBFile = true;
@@ -371,9 +336,9 @@ namespace ProtocolID {
     }
 
     bool ProtocolIdentifier::identifyFullResync() {
-        return false;
-        size_t index = searchProtocol("fullresync");
-        if (index == std::string::npos) return false;
+
+        if (splittedBuffer[0] != FULLRESYNC) return false;
+
         std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, true);
         rObject = new ProtocolUtils::ReturnObject(response, 0, true);
         return true;

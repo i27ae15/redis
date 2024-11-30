@@ -6,7 +6,7 @@
 namespace RemusConn {
 
     Slave::Slave(signed short port, std::string host, std::string dirName, std::string fileName) :
-    ConnectionManager(port, "slave", host, dirName, fileName),
+    ConnectionManager(port, SLAVE, host, dirName, fileName),
     handShakedWithMaster {},
     master {nullptr}
     {
@@ -27,10 +27,6 @@ namespace RemusConn {
         master_addr.sin_port = htons(getMasterPort());
         master_addr.sin_addr.s_addr = INADDR_ANY;
 
-        PRINT_HIGHLIGHT("Master fd: " + std::to_string(getMasterServerFD()));
-        PRINT_HIGHLIGHT("Master port: " + std::to_string(getMasterPort()));
-        PRINT_HIGHLIGHT("Master host: " + getMasterHost());
-
         signed short serverFD = getMasterServerFD();
 
         inet_pton(AF_INET, getMasterHost().c_str(), &master_addr.sin_addr);
@@ -43,7 +39,7 @@ namespace RemusConn {
         send(serverFD, response.c_str(), response.size(), 0);
 
         replicaHand = true;
-        std::thread(ConnManager::handle_connection, this, serverFD).detach();
+        std::thread(ConnManager::handleConnection, this, serverFD).detach();
     }
 
     void Slave::assignMaster(Master* master) {

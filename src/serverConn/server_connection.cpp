@@ -59,32 +59,27 @@ namespace RemusConn {
     std::string ConnectionManager::getDbFile() {return dbManager->getDbFile();}
 
     void ConnectionManager::print(std::string msg, std::string color) {
-        if (getRole() == "slave") {
+        if (getRole() == RemusConn::SLAVE) {
             msg = "REPLICA SAYS: " + msg;
             PRINT_COLOR(color, msg);
 
-        } else if (getRole() == "master") {
+        } else if (getRole() == RemusConn::MASTER) {
             msg = "MASTER SAYS: " + msg;
             PRINT_COLOR(color, msg);
         }
     }
 
     void ConnectionManager::print(std::string msg) {
-        if (getRole() == "slave") {
+        if (getRole() == RemusConn::SLAVE) {
             print(msg, BLUE);
-        } else if (getRole() == "master") {
-            print(msg, MAGENTA);
+        } else if (getRole() == RemusConn::MASTER) {
+            print(msg, WHITE);
         }
     }
 
     ProtocolID::ProtocolIdentifier* ConnectionManager::getProtocolIdr() {
 
-        print("In get protocol idr");
-
         if (!protocolIdr->getInProcess()) return protocolIdr;
-
-        print("In get protocol idr 2");
-
 
         for (ProtocolID::ProtocolIdentifier* ptc : protocols) {
             if (!ptc->getInProcess()) {
@@ -93,7 +88,7 @@ namespace RemusConn {
             }
         }
 
-        print("ALL WORKERS ARE BUSY, CREATING NEW ONE");
+        print("ALL WORKERS ARE BUSY, CREATING NEW ONE", YELLOW);
         setProtocolIdr(new ProtocolID::ProtocolIdentifier(this), true);
         return protocolIdr;
     }

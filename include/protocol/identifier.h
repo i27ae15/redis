@@ -24,6 +24,21 @@ namespace RemusConn {
 
 namespace ProtocolID {
 
+    constexpr const char* PING = "PING";
+    constexpr const char* ECHO = "ECHO";
+    constexpr const char* GET = "GET";
+    constexpr const char* SET = "SET";
+    constexpr const char* CONFIG = "CONFIG";
+    constexpr const char* KEYS = "KEYS";
+    constexpr const char* INFO = "INFO";
+    constexpr const char* REPLCONF = "REPLCONF";
+    constexpr const char* PSYNC = "PSYNC";
+    constexpr const char* FULLRESYNC = "FULLRESYNC";
+
+    constexpr const char* PONG = "PONG";
+    constexpr const char* OK = "OK";
+    constexpr const char* GETACK = "GETACK";
+
     class ProtocolIdentifier {
 
         public:
@@ -33,7 +48,7 @@ namespace ProtocolID {
 
         ProtocolUtils::ReturnObject* getRObject();
         std::string getProtocol();
-        bool identifyProtocol(const std::string buffer, bool clearRobject = true);
+        bool identifyProtocol(const std::string rawBuffer, const std::string buffer, bool clearRobject = true);
 
         void cleanResponseObject();
 
@@ -49,9 +64,12 @@ namespace ProtocolID {
 
         std::string buffer;
         std::string protocol;
-        std::string cleaned_buffer;
+        std::string rawBuffer;
+        std::vector<std::string> splittedBuffer;
 
         std::pair<bool, size_t> getExpireTime();
+
+        void setSplitedBuffer();
 
         bool (ProtocolIdentifier::*checkMethods[11])();
         bool identifyPing();

@@ -28,4 +28,7 @@
 
 namespace RemusUtils {
     std::vector<std::string> splitString(const std::string& str, const std::string& delimiter);
+    void printRawBytes(const char* buffer, size_t size);
+    void printMixedBytes(const char* buffer, size_t size);
+    void displayRawBytesAsChars(const char* buffer, size_t size);
 }

@@ -26,6 +26,9 @@ namespace ProtocolID {
 
 namespace RemusConn {
 
+    constexpr const char* MASTER = "MASTER";
+    constexpr const char* SLAVE = "SLAVE";
+
     class ConnectionManager {
 
         public:
