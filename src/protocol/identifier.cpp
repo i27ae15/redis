@@ -189,7 +189,7 @@ namespace ProtocolID {
         Cache::DataManager cache;
         cache.setValue(key, value, expireTime.first, expireTime.second);
 
-        PRINT_SUCCESS("VALUE SET FOR KEY: " + key + " : " + value);
+        // PRINT_SUCCESS("VALUE SET FOR KEY: " + key + " : " + value);
 
         rObject = new ProtocolUtils::ReturnObject("+OK\r\n", 0);
         if (conn->getRole() == RemusConn::SLAVE) return true;

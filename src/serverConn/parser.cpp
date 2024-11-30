@@ -46,7 +46,7 @@ namespace RemusParser {
 
         index -= 2;
 
-        PRINT_WARNING("ARRAY VALUE(S) FOUND: " + found);
+        // PRINT_WARNING("ARRAY VALUE(S) FOUND: " + found);
         return found;
     }
 
@@ -63,7 +63,7 @@ namespace RemusParser {
         }
         index -= 2;
 
-        PRINT_WARNING("BULK STRING FOUND: " + found);
+        // PRINT_WARNING("BULK STRING FOUND: " + found);
         return found;
     }
 }

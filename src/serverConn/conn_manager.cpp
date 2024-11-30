@@ -25,7 +25,6 @@ namespace ConnManager {
 
     bool replicaHandShake(RemusConn::ConnectionManager* conn, std::string buffer, int clientFD) {
         std::string response {};
-        PRINT_HIGHLIGHT("BUFFER H : " + buffer);
         if (conn->rs == 0) {
             // Response after pong
             if (buffer.substr(0, 4) != ProtocolID::PONG) return false;
@@ -91,7 +90,6 @@ namespace ConnManager {
                 continue;
             }
             // TODO: Add possible to listen on $
-            PRINT_HIGHLIGHT("F : " + f);
             std::thread(handleResponse, conn, buffer, f, clientFD).detach();
         }
     }
@@ -112,7 +110,6 @@ namespace ConnManager {
             }
 
             if (bytesReceived < BUFFER_SIZE) buffer[bytesReceived] = '\0';
-            RemusUtils::printMixedBytes(buffer, bytesReceived);
             responseRouter(buffer, bytesReceived, conn, clientFD);
         }
         close(clientFD);
