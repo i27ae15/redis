@@ -309,7 +309,9 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForWait() {
 
-        std::string response = ProtocolUtils::constructInteger({"0"});
+        RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+
+        std::string response = ProtocolUtils::constructInteger({std::to_string(mConn->getNumReplicas())});
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;

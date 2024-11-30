@@ -7,9 +7,14 @@ namespace RemusConn {
     class Master : public ConnectionManager {
 
         public:
-            Master(unsigned short port, std::string host,
-             std::string dirName = "", std::string fileName = "");
+            Master(
+                unsigned short port,
+                std::string host,
+                std::string dirName = "",
+                std::string fileName = ""
+            );
 
+            unsigned short getNumReplicas();
 
             void propageProtocolToReplica(const std::string& buffer);
 

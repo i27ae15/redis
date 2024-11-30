@@ -11,6 +11,10 @@ namespace RemusConn {
     replicaConns {}
     {}
 
+    unsigned short Master::getNumReplicas() {
+        return replicaConns.size();
+    }
+
     void Master::createCurrentReplicaConn() {
         currentReplicaConn = RemusConnStructs::replicaConn();
     }
