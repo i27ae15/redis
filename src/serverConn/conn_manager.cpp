@@ -6,6 +6,8 @@
 #include <cstring>
 #include <ctype.h>
 #include <stdexcept>
+#include <queue>
+#include <mutex>
 
 #include <serverConn/structs.h>
 #include <serverConn/server_connection.h>
@@ -22,6 +24,8 @@
 
 
 namespace ConnManager {
+    std::mutex qMutex;
+    std::queue<RemusParser::ParseCommand> commandQueue;
 
     bool replicaHandShake(RemusConn::ConnectionManager* conn, std::string buffer, int clientFD) {
         std::string response {};
@@ -51,13 +55,14 @@ namespace ConnManager {
         return true;
     }
 
-    void handleResponse(RemusConn::ConnectionManager* conn, std::string rawBuffer, std::string buffer, int clientFD) {
+    void handleResponse(RemusConn::ConnectionManager* conn, std::string rawBuffer, RemusParser::ParseCommand command, int clientFD) {
+        PRINT_SUCCESS(command.command);
 
         if (conn->replicaHand) {
-            if (replicaHandShake(conn, buffer, clientFD)) return;
+            if (replicaHandShake(conn, command.command, clientFD)) return;
         }
 
-        conn->getProtocolIdr()->identifyProtocol(rawBuffer, buffer);
+        conn->getProtocolIdr()->identifyProtocol(rawBuffer, command.command, command.size);
         ProtocolUtils::ReturnObject* rObject = conn->getProtocolIdr()->getRObject();
 
         if (rObject->sendResponse) send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
@@ -77,27 +82,46 @@ namespace ConnManager {
 
     void responseRouter(const char* buffer, size_t size, RemusConn::ConnectionManager* conn, int clientFD) {
 
-        std::string f {};
+        RemusParser::ParseCommand command {};
 
         for (unsigned short i {}; i < size; i++) {
 
             unsigned char byte = static_cast<unsigned char>(buffer[i]);
 
             if (byte == ProtocolTypes::ARRAY) {
-                f = RemusParser::parserArray(++i, buffer);
+                command = RemusParser::parserArray(++i, buffer);
             }
             else if (byte == ProtocolTypes::SSTRING) {
-                f = RemusParser::parserString(++i, buffer, size);
+                command = RemusParser::parserString(++i, buffer, size);
             } else {
                 continue;
             }
+
             // TODO: Add possible to listen on $
-            std::thread(handleResponse, conn, buffer, f, clientFD).detach();
+            PRINT_SUCCESS(command.command);
+
+            std::lock_guard<std::mutex> lock(qMutex);
+            commandQueue.push(command);
         }
+
+        // Launch a thread to process the queue
+        std::thread([conn, clientFD, buffer]() {
+            while (!commandQueue.empty()) {
+                RemusParser::ParseCommand command;
+                {
+                    std::lock_guard<std::mutex> lock(qMutex);
+                    if (!commandQueue.empty()) {
+                        command = commandQueue.front();
+                        commandQueue.pop();
+                    }
+                }
+                handleResponse(conn, buffer, command, clientFD);
+            }
+        }).detach();
     }
 
     void handleConnection(RemusConn::ConnectionManager* conn, int clientFD) {
-        constexpr size_t BUFFER_SIZE = 1024;
+        constexpr size_t BUFFER_SIZE = 1048;
 
         char buffer[BUFFER_SIZE];
         size_t bytesReceived {};
@@ -112,6 +136,8 @@ namespace ConnManager {
             }
 
             if (bytesReceived < BUFFER_SIZE) buffer[bytesReceived] = '\0';
+
+            RemusUtils::printMixedBytes(buffer, bytesReceived);
             responseRouter(buffer, bytesReceived, conn, clientFD);
         }
         close(clientFD);

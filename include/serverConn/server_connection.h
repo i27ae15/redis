@@ -70,7 +70,8 @@ namespace RemusConn {
 
         // Setters
 
-        void addBytesProcessed(const std::string &bytes);
+        void addBytesProcessed(unsigned short bytes);
+        void startProcessingBytes();
 
         // Utilities
 
@@ -81,6 +82,8 @@ namespace RemusConn {
         private:
 
             unsigned int bytesProcessed;
+
+            bool listenToBytes;
 
             const std::string id;
 

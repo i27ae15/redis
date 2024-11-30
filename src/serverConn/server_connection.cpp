@@ -19,6 +19,7 @@ namespace RemusConn {
         host {host},
         sendDBFile {},
         replicaHand {},
+        bytesProcessed {},
         dirName {dirName},
         fileName {fileName},
         dbManager {nullptr},
@@ -62,8 +63,13 @@ namespace RemusConn {
 
     // SETTERS
 
-    void ConnectionManager::addBytesProcessed(const std::string &bytes) {
-        bytesProcessed += bytes.size();
+    void ConnectionManager::addBytesProcessed(unsigned short bytes) {
+        // PRINT_HIGHLIGHT("ADDING BYTES " + std::to_string(bytes.size()));
+        if (listenToBytes) bytesProcessed += bytes;
+    }
+
+    void ConnectionManager::startProcessingBytes() {
+        listenToBytes = true;
     }
 
     void ConnectionManager::print(std::string msg, std::string color) {

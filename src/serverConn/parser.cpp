@@ -28,9 +28,10 @@ namespace RemusParser {
         return static_cast<unsigned char>(std::stoi(nVar));
     }
 
-    std::string parserArray(unsigned short& index, const char* buffer) {
+    ParseCommand parserArray(unsigned short& index, const char* buffer) {
 
         unsigned char nArgs = static_cast<unsigned char>(buffer[index] - '0');
+        unsigned short size = index;
 
         index += 4;
         std::string found {};
@@ -45,18 +46,21 @@ namespace RemusParser {
             nArgs--;
         }
 
+        size = index - size;
         index -= 2;
 
         // PRINT_WARNING("ARRAY VALUE(S) FOUND: " + found);
-        return found;
+        return ParseCommand{found, size};
     }
 
-    std::string parserString(unsigned short& index, const char* buffer, size_t bufferSize) {
+    ParseCommand parserString(unsigned short& index, const char* buffer, size_t bufferSize) {
 
         std::string found {};
+        unsigned short size {};
         unsigned char byte {};
 
         while (bufferSize > index) {
+            size++;
             byte = static_cast<unsigned char>(buffer[index++]);
             if (byte == '\n' || byte == '\r') continue;
             if (byte == ProtocolTypes::ARRAY || byte == ProtocolTypes::BSTRING) break;
@@ -65,6 +69,6 @@ namespace RemusParser {
         index -= 2;
 
         // PRINT_WARNING("BULK STRING FOUND: " + found);
-        return found;
+        return ParseCommand{found, size};
     }
 }

@@ -1,7 +1,13 @@
 #include <string>
 
 namespace RemusParser {
+
+    struct ParseCommand {
+        std::string command;
+        unsigned short size;
+    };
+
     unsigned char getVarChars(unsigned short& index, const char* buffer);
-    std::string parserArray(unsigned short& index, const char* buffer);
-    std::string parserString(unsigned short& index, const char* buffer, size_t bufferSize);
+    ParseCommand parserArray(unsigned short& index, const char* buffer);
+    ParseCommand parserString(unsigned short& index, const char* buffer, size_t bufferSize);
 }

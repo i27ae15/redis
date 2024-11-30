@@ -73,24 +73,32 @@ namespace ProtocolID {
         splittedBuffer = RemusUtils::splitString(buffer, " ");
     }
 
-    bool ProtocolIdentifier::identifyProtocol(const std::string rawBuffer, const std::string buffer, bool clearRObject) {
+    bool ProtocolIdentifier::identifyProtocol(
+        const std::string rawBuffer,
+        const std::string command,
+        const unsigned short commandSize,
+        bool clearObject
+    ) {
 
         setInProcess(true);
-        if (clearRObject) cleanResponseObject();
+        if (clearObject) cleanResponseObject();
 
-        this->buffer = buffer;
+        this->buffer = command;
         this->rawBuffer = rawBuffer;
 
         setSplitedBuffer();
 
+        // PRINT_HIGHLIGHT(getIdFromBuffer() + " : " + std::to_string(commandSize));
+
         bool foundProtocol {};
         if (checkMethods.count(getIdFromBuffer())) {
-            foundProtocol = checkMethods[splittedBuffer[0]]();
+            foundProtocol = checkMethods[getIdFromBuffer()]();
         }
 
         if (!foundProtocol) conn->print("Protocol could not be identified: " + buffer, RED);
 
-        conn->addBytesProcessed(this->rawBuffer);
+        conn->addBytesProcessed(commandSize);
+        // PRINT_HIGHLIGHT("After calling method: " + std::to_string(conn->getBytesProcessed()));
 
         setInProcess(false);
         return foundProtocol;
@@ -98,8 +106,9 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForPing() {
 
-        if (splittedBuffer[0] != PING) return false;
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::PONG_R);
+
+        if (conn->getRole() == RemusConn::SLAVE) rObject->sendResponse = false;
 
         return true;
     }
@@ -272,6 +281,9 @@ namespace ProtocolID {
         RemusConn::Slave* masterConn = static_cast<RemusConn::Slave*>(conn);
         if (splittedBuffer[1] != GETACK) return false;
 
+        PRINT_SUCCESS("Activating listener");
+        conn->startProcessingBytes();
+
         std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", std::to_string(conn->getBytesProcessed())}, ProtocolTypes::ResponseType::ARRAY);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
@@ -289,9 +301,7 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForFullResync() {
 
-        std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", "0"}, ProtocolTypes::ResponseType::ARRAY);
-        rObject = new ProtocolUtils::ReturnObject(response, 0, true);
-
+        rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R, 0, false);
         return true;
     }
 
