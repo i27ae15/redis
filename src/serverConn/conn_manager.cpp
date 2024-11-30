@@ -21,7 +21,6 @@
 #include <utils.h>
 
 
-
 namespace ConnManager {
 
     bool replicaHandShake(RemusConn::ConnectionManager* conn, std::string buffer, int clientFD) {
