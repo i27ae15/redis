@@ -10,6 +10,9 @@
 #include <algorithm>
 #include <functional>
 #include <map>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 #include <cache.h>
 #include <utils.h>
@@ -55,11 +58,24 @@ namespace ProtocolID {
         void cleanResponseObject();
 
         bool getInProcess();
-        void setInProcess(bool value);
 
+        void setInProcess(bool value);
+        void setReplicasOscarKilo(unsigned short n);
+
+        // Shared state that will be passed to the child
         std::string getIdFromBuffer();
 
+        void interruptWait();
+        static bool getProIsWaiting();
+
         private:
+
+        static bool pWrite;
+        static bool pIsWaiting;
+
+        std::atomic<bool> interruptFlag;
+        std::mutex mtx;
+        std::condition_variable cv;
 
         bool inProcess;
 

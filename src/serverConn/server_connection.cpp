@@ -104,6 +104,7 @@ namespace RemusConn {
 
         print("ALL WORKERS ARE BUSY, CREATING NEW ONE", YELLOW);
         setProtocolIdr(new ProtocolID::ProtocolIdentifier(this), true);
+        print("PROTCOLS OBJ: " + std::to_string(protocols.size()), YELLOW);
         return protocolIdr;
     }
 

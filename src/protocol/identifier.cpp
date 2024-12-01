@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <thread>
+#include <chrono>
+#include <memory>
 
 #include <serverConn/server_connection.h>
 #include <serverConn/master.h>
@@ -12,11 +15,15 @@
 
 namespace ProtocolID {
 
+    bool ProtocolIdentifier::pWrite {};
+    bool ProtocolIdentifier::pIsWaiting {};
+
     ProtocolIdentifier::ProtocolIdentifier(RemusConn::ConnectionManager *conn) :
     conn {conn},
     protocol {},
     splittedBuffer {},
     rawBuffer {},
+    interruptFlag {},
     checkMethods {
         {PING, [this]() { return actionForPing(); }},
         {ECHO, [this]() { return actionForEcho(); }},
@@ -64,7 +71,16 @@ namespace ProtocolID {
         return splittedBuffer[0];
     }
 
+    bool ProtocolIdentifier::getProIsWaiting() {
+        return pIsWaiting;
+    }
+
     // Setters
+
+    void ProtocolIdentifier::setReplicasOscarKilo(unsigned short n) {
+        RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+        mConn->setReplicasOscarKilo(0);
+    }
 
     void ProtocolIdentifier::setInProcess(bool value) {
         inProcess = value;
@@ -126,6 +142,9 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForSet() {
         // *3$3set$9pineapple$6banana
+        pWrite = true;
+        RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+        mConn->setReplicasOscarKilo(0);
 
         std::string &key = splittedBuffer[1];
         std::string &value = splittedBuffer[2];
@@ -134,8 +153,10 @@ namespace ProtocolID {
         std::pair<bool, size_t> expireTime {};
 
         if (splittedBuffer.size() > 3 && splittedBuffer[3] == "px") {
+            PRINT_WARNING("ON PX");
             expireTime.second = std::stoi(splittedBuffer[4]);
             expireTime.first = true;
+            PRINT_WARNING("AFTER PX");
         }
 
         Cache::DataManager cache;
@@ -149,9 +170,7 @@ namespace ProtocolID {
             return true;
         }
 
-        RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
-        masterConn->propageProtocolToReplica(rawBuffer);
-
+        std::thread(&RemusConn::Master::propagueProtocolToReplica, mConn, this, rawBuffer).detach();
         return true;
     }
 
@@ -264,7 +283,7 @@ namespace ProtocolID {
 
         RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
 
-        if (!masterConn->inHandShakeWithReplica) {
+        if (!masterConn->inHandShakeWithReplica && splittedBuffer[1] != "ACK") {
             masterConn->inHandShakeWithReplica = true;
             masterConn->createCurrentReplicaConn();
             // the first replConf is the port
@@ -273,6 +292,11 @@ namespace ProtocolID {
         }
 
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
+        if (splittedBuffer[1] == "ACK") {
+            RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+            mConn->incrementReplicasOscarKilo();
+            rObject->sendResponse = false;
+        };
 
         return true;
     }
@@ -309,12 +333,54 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForWait() {
 
-        RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+        // WAIT 1 500
 
-        std::string response = ProtocolUtils::constructInteger({std::to_string(mConn->getNumReplicas())});
+        pIsWaiting = true;
+
+        PRINT_HIGHLIGHT("ON WAIT");
+        RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+        mConn->setReplicasToAck(std::stoi(splittedBuffer[1]));
+        unsigned short milliseconds = std::stoi(splittedBuffer[2]);
+
+        std::unique_lock<std::mutex> lock(mtx);
+        std::thread(&RemusConn::Master::getReplicasACKs, mConn).detach();
+
+
+        if (mConn->getReplicasToAck() > 0) {
+            PRINT_HIGHLIGHT("TO WAIT " + splittedBuffer[1]);
+
+            if (!cv.wait_for(lock, std::chrono::milliseconds(milliseconds), [this, mConn] {
+                return interruptFlag.load();
+            })) {
+                PRINT_ERROR("TIMEOUT REACHED");
+            }
+
+            PRINT_HIGHLIGHT("BREAKING WAITING");
+        } else {
+            setReplicasOscarKilo(mConn->getReplicasToAck());
+        }
+
+        interruptFlag.store(false);
+
+        unsigned short ACKs = mConn->getReplicasOscarKilo();
+        if (!pWrite) ACKs = mConn->getNumReplicas();
+
+        std::string response = ProtocolUtils::constructInteger({std::to_string(ACKs)});
         rObject = new ProtocolUtils::ReturnObject(response);
 
+        mConn->setReplicasToAck(0);
+
+        pWrite = false; // This should not be here, but whatever
+        pIsWaiting = false;
+
         return true;
+    }
+
+    void ProtocolIdentifier::interruptWait() {
+        PRINT_SUCCESS("INTERRUPTING WAIT");
+        std::lock_guard<std::mutex> lock(mtx);
+        interruptFlag.store(true);
+        cv.notify_all();
     }
 
 }

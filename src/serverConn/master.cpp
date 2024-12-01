@@ -1,3 +1,6 @@
+#include <protocol/utils.h>
+#include <protocol/identifier.h>
+
 #include <serverConn/master.h>
 #include <serverConn/structs.h>
 
@@ -8,11 +11,34 @@ namespace RemusConn {
     ConnectionManager(port, MASTER, host, dirName, fileName),
     inHandShakeWithReplica {},
     currentReplicaConn {},
-    replicaConns {}
+    replicaConns {},
+    nReplicasToACK {},
+    nReplicasOscarKilo {}
     {}
+
+    void Master::incrementReplicasOscarKilo() {
+        PRINT_HIGHLIGHT("INCREMENTING OSCAR KILO");
+        nReplicasOscarKilo++;
+    }
+
+    void Master::setReplicasToAck(unsigned short n) {
+        nReplicasToACK = n;
+    }
+
+    void Master::setReplicasOscarKilo(unsigned short n) {
+        nReplicasOscarKilo = n;
+    }
 
     unsigned short Master::getNumReplicas() {
         return replicaConns.size();
+    }
+
+    unsigned short Master::getReplicasToAck() {
+        return nReplicasToACK;
+    }
+
+    unsigned short Master::getReplicasOscarKilo() {
+        return nReplicasOscarKilo;
     }
 
     void Master::createCurrentReplicaConn() {
@@ -32,11 +58,21 @@ namespace RemusConn {
         currentReplicaConn.serverFD = value;
     }
 
-    void Master::propageProtocolToReplica(const std::string& buffer) {
+    void Master::propagueProtocolToReplica(ProtocolID::ProtocolIdentifier *idt, const std::string& buffer) {
 
-        // rObject = new ProtocolUtils::ReturnObject("$" + std::to_string(fileLength) + "\r\n" + conn->getDbFile(), 0);
-        for (RemusConnStructs::replicaConn reConn : replicaConns) {
+        for (size_t i {}; i < getNumReplicas(); i++) {
+            RemusConnStructs::replicaConn &reConn = replicaConns[i];
             send(reConn.serverFD, buffer.c_str(), buffer.size(), 0);
+        }
+    }
+
+    void Master::getReplicasACKs() {
+
+        std::string response = ProtocolUtils::constructArray({"REPLCONF", "GETACK", "*"});
+
+        for (size_t i {}; i < getNumReplicas(); i++) {
+            RemusConnStructs::replicaConn &reConn = replicaConns[i];
+            send(reConn.serverFD, response.c_str(), response.size(), 0);
         }
     }
 

@@ -55,14 +55,22 @@ namespace ConnManager {
         return true;
     }
 
-    void handleResponse(RemusConn::ConnectionManager* conn, std::string rawBuffer, RemusParser::ParseCommand command, int clientFD) {
+    void handleResponse(
+        RemusConn::ConnectionManager* conn,
+        std::string rawBuffer,
+        RemusParser::ParseCommand command,
+        int clientFD
+    ) {
 
         if (conn->replicaHand) {
             if (replicaHandShake(conn, command.command, clientFD)) return;
         }
 
-        conn->getProtocolIdr()->identifyProtocol(rawBuffer, command.command, command.size);
-        ProtocolUtils::ReturnObject* rObject = conn->getProtocolIdr()->getRObject();
+        ProtocolID::ProtocolIdentifier* cIdentifier = conn->getProtocolIdr();
+
+        cIdentifier->identifyProtocol(rawBuffer, command.command, command.size);
+        ProtocolUtils::ReturnObject* rObject = cIdentifier->getRObject();
+        // PRINT_HIGHLIGHT("SENDING BACK: " + rObject->return_value);
 
         if (rObject->sendResponse) send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
 

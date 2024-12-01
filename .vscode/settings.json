@@ -96,6 +96,7 @@
         "random": "cpp",
         "numbers": "cpp",
         "semaphore": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "condition_variable": "cpp"
     }
 }

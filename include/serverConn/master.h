@@ -14,18 +14,28 @@ namespace RemusConn {
                 std::string fileName = ""
             );
 
-            unsigned short getNumReplicas();
+            void incrementReplicasOscarKilo();
+            void setReplicasToAck(unsigned short n);
+            void setReplicasOscarKilo(unsigned short n);
 
-            void propageProtocolToReplica(const std::string& buffer);
+            unsigned short getNumReplicas();
+            unsigned short getReplicasToAck();
+            unsigned short getReplicasOscarKilo();
+
+            void propagueProtocolToReplica(ProtocolID::ProtocolIdentifier *idt, const std::string& buffer);
 
             void createCurrentReplicaConn();
             void setCurrentReplicaPort(unsigned short value);
             void setCurrentReplicaServerFd(unsigned short value);
             void addAndCleanCurrentReplicaConn();
+            void getReplicasACKs();
 
             bool inHandShakeWithReplica;
 
         private:
+            unsigned short nReplicasToACK;
+            unsigned short nReplicasOscarKilo;
+
             RemusConnStructs::replicaConn currentReplicaConn;
             std::vector<RemusConnStructs::replicaConn> replicaConns;
 
