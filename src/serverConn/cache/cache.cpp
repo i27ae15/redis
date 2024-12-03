@@ -7,7 +7,12 @@ namespace Cache {
     DataManager::DataManager() {}
     DataManager::~DataManager() {}
 
-    void DataManager::setValue(std::string key, std::string value, bool expires, size_t expiresIn) {
+    void DataManager::setValue(
+        std::string key,
+        std::string value,
+        bool expires,
+        size_t expiresIn
+    ) {
 
         if (expires) {
             auto now = std::chrono::system_clock::now();

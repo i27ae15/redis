@@ -10,12 +10,14 @@
 namespace RomulusConn {
 
     BaseConnection::BaseConnection(
-        unsigned short port, std::string role, std::string host,
-        std::string dirName, std::string fileName) :
+        unsigned short port,
+        std::string host,
+        std::string dirName,
+        std::string fileName
+    ) :
         rs {},
         serverFD {},
         port {port},
-        role {role},
         host {host},
         sendDBFile {},
         replicaHand {},
@@ -31,8 +33,6 @@ namespace RomulusConn {
         createSocket();
         checkAddress();
         checkConnection();
-
-        if (connectionStatus) PRINT_SUCCESS("Connection Stablished at port: " + std::to_string(port) + " As " + role);
     }
 
     BaseConnection::~BaseConnection() {
@@ -50,8 +50,6 @@ namespace RomulusConn {
     std::string BaseConnection::getDirName() {return dirName;}
 
     std::string BaseConnection::getFileName() {return fileName;}
-
-    std::string BaseConnection::getRole() {return role;}
 
     std::string BaseConnection::getHost() {return host;}
 

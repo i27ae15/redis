@@ -53,7 +53,12 @@ namespace ProtocolID {
 
         ProtocolUtils::ReturnObject* getRObject();
         std::string getProtocol();
-        bool identifyProtocol(const std::string rawBuffer, const std::string command, const unsigned short commandSize, bool clearObject = true);
+        bool identifyProtocol(
+            const std::string rawBuffer,
+            const std::string command,
+            const unsigned short commandSize,
+            bool clearObject = true
+        );
 
         void cleanResponseObject();
 
@@ -90,6 +95,7 @@ namespace ProtocolID {
         void setSplitedBuffer();
 
         std::unordered_map<std::string, std::function<bool()>> checkMethods;
+
         bool actionForPing();
         bool actionForEcho();
         bool actionForSet();

@@ -94,9 +94,19 @@ namespace ConnInitializer {
             RomulusConn::BaseConnection* newConn {nullptr};
 
             if (connConf.role == RomulusConn::MASTER) {
-                newConn = new RomulusConn::Master(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
+                newConn = new RomulusConn::Master(
+                    connConf.port,
+                    connConf.host,
+                    connConf.dirName,
+                    connConf.fileName
+                );
             } else {
-                RomulusConn::Slave* slaveConn = new RomulusConn::Slave(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
+                RomulusConn::Slave* slaveConn = new RomulusConn::Slave(
+                    connConf.port,
+                    connConf.host,
+                    connConf.dirName,
+                    connConf.fileName
+                );
                 slaveConn->assignMaster(connConfigs.masterPort, -1, connConfigs.masterHost);
                 slaveConn->handShakeWithMaster();
                 newConn = slaveConn;

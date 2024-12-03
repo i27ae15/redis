@@ -10,7 +10,10 @@ namespace ProtocolUtils {
         this->sendResponse = sendResponse;
     }
 
-    std::string constructProtocol(const std::vector<std::string> args, ProtocolTypes::ResponseType rType) {
+    std::string constructProtocol(
+        const std::vector<std::string> args,
+        ProtocolTypes::ResponseType rType
+    ) {
 
         if (rType == ProtocolTypes::ResponseType::ARRAY) return constructArray(args);
         if (rType == ProtocolTypes::ResponseType::SSTRING) return constructSimpleString(args);

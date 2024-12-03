@@ -30,7 +30,7 @@ namespace RomulusDB {
         private:
 
         RomulusDbStructs::DatabaseBlock* db;
-        void parseDatabase();
+        void parseDatabase(bool forceParsing = false);
 
         RomulusConn::BaseConnection* conn;
 
@@ -46,8 +46,6 @@ namespace RomulusDB {
         void save(std::string key, std::string value);
 
         void openFile();
-
-
     };
 
 }

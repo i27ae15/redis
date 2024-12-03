@@ -25,6 +25,7 @@ namespace RomulusConn {
             bool isInHandShake();
 
             std::string getMasterHost();
+            std::string getRole() const override;
 
         private:
 

@@ -7,26 +7,24 @@
 namespace RomulusConn {
     // Master Class
 
-    Master::Master(unsigned short port, std::string host, std::string dirName, std::string fileName) :
-    BaseConnection(port, MASTER, host, dirName, fileName),
+    Master::Master(
+        unsigned short port,
+        std::string host,
+        std::string dirName,
+        std::string fileName
+    ) :
+    BaseConnection(port, host, dirName, fileName),
     inHandShakeWithReplica {},
     currentReplicaConn {},
     replicaConns {},
     nReplicasToACK {},
     nReplicasOscarKilo {}
-    {}
-
-    void Master::incrementReplicasOscarKilo() {
-        PRINT_HIGHLIGHT("INCREMENTING OSCAR KILO");
-        nReplicasOscarKilo++;
+    {
+        if (getConnectionStatus()) PRINT_SUCCESS("Connection Stablished at port: " + std::to_string(port) + " As " +  getRole());
     }
 
-    void Master::setReplicasToAck(unsigned short n) {
-        nReplicasToACK = n;
-    }
-
-    void Master::setReplicasOscarKilo(unsigned short n) {
-        nReplicasOscarKilo = n;
+    std::string Master::getRole() const {
+        return MASTER;
     }
 
     unsigned short Master::getNumReplicas() {
@@ -40,6 +38,19 @@ namespace RomulusConn {
     unsigned short Master::getReplicasOscarKilo() {
         return nReplicasOscarKilo;
     }
+
+    void Master::incrementReplicasOscarKilo() {
+        nReplicasOscarKilo++;
+    }
+
+    void Master::setReplicasToAck(unsigned short n) {
+        nReplicasToACK = n;
+    }
+
+    void Master::setReplicasOscarKilo(unsigned short n) {
+        nReplicasOscarKilo = n;
+    }
+
 
     void Master::createCurrentReplicaConn() {
         currentReplicaConn = RomulusConnStructs::replicaConn();
@@ -58,7 +69,10 @@ namespace RomulusConn {
         currentReplicaConn.serverFD = value;
     }
 
-    void Master::propagueProtocolToReplica(ProtocolID::ProtocolIdentifier *idt, const std::string& buffer) {
+    void Master::propagueProtocolToReplica(
+        ProtocolID::ProtocolIdentifier *idt,
+        const std::string& buffer
+    ) {
 
         for (size_t i {}; i < getNumReplicas(); i++) {
             RomulusConnStructs::replicaConn &reConn = replicaConns[i];

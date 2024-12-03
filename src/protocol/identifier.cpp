@@ -134,7 +134,7 @@ namespace ProtocolID {
 
         std::string &toEcho = splittedBuffer[1];
         // std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
-        std::string response = ProtocolUtils::constructProtocol({toEcho}, ProtocolTypes::ResponseType::RBSTRING);
+        std::string response = ProtocolUtils::constructRestBulkString({toEcho});
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;
@@ -153,10 +153,8 @@ namespace ProtocolID {
         std::pair<bool, size_t> expireTime {};
 
         if (splittedBuffer.size() > 3 && splittedBuffer[3] == "px") {
-            PRINT_WARNING("ON PX");
             expireTime.second = std::stoi(splittedBuffer[4]);
             expireTime.first = true;
-            PRINT_WARNING("AFTER PX");
         }
 
         Cache::DataManager cache;
@@ -170,15 +168,22 @@ namespace ProtocolID {
             return true;
         }
 
-        std::thread(&RomulusConn::Master::propagueProtocolToReplica, mConn, this, rawBuffer).detach();
+        std::thread(
+            &RomulusConn::Master::propagueProtocolToReplica,
+            mConn,
+            this,
+            rawBuffer
+        ).detach();
         return true;
     }
 
     bool ProtocolIdentifier::actionForGet() {
 
         if (conn->getDirName().size() == 0) return actionForGetNoDB();
+        if (conn->getDirName().size() > 0) return actionForGetWithDB();
 
-        return actionForGetWithDB();
+        PRINT_ERROR("GETTING TO END OF AFCTION_FOR_GET");
+        return false;
     }
 
     bool ProtocolIdentifier::actionForGetWithDB() {
@@ -189,7 +194,9 @@ namespace ProtocolID {
         if (db->keyValue[key].expired) {
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
         } else {
-            std::string response = ProtocolUtils::constructProtocol({db->keyValue[key].value}, ProtocolTypes::ResponseType::RBSTRING);
+            std::string response = ProtocolUtils::constructRestBulkString(
+                {db->keyValue[key].value}
+            );
             rObject = new ProtocolUtils::ReturnObject(response, 0);
         }
 
@@ -209,7 +216,7 @@ namespace ProtocolID {
             return false;
         }
 
-        std::string response = ProtocolUtils::constructProtocol({value.value()}, ProtocolTypes::ResponseType::RBSTRING);
+        std::string response = ProtocolUtils::constructRestBulkString({value.value()});
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
@@ -229,7 +236,7 @@ namespace ProtocolID {
             vars = {"dbfilename", conn->getFileName()};
         }
 
-        std::string response = ProtocolUtils::constructProtocol(vars, ProtocolTypes::ResponseType::ARRAY);
+        std::string response = ProtocolUtils::constructArray(vars);
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
@@ -250,7 +257,7 @@ namespace ProtocolID {
             dbKeys.push_back(it->first);
          }
 
-        std::string response = ProtocolUtils::constructProtocol(dbKeys, ProtocolTypes::ResponseType::ARRAY);
+        std::string response = ProtocolUtils::constructArray(dbKeys);
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;
@@ -261,9 +268,12 @@ namespace ProtocolID {
         std::string role = conn->getRole();
         std::transform(role.begin(), role.end(), role.begin(), ::tolower);
 
-        std::string response = ProtocolUtils::constructProtocol(
-            {"role:" + role, "master_repl_offset:0", "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"},
-            ProtocolTypes::ResponseType::BSTRING
+        std::string response = ProtocolUtils::constructBulkString(
+            {
+                "role:" + role,
+                "master_repl_offset:0",
+                "master_replid:8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"
+            }
         );
 
         rObject = new ProtocolUtils::ReturnObject(response);
@@ -276,6 +286,7 @@ namespace ProtocolID {
         if (conn->getRole() == RomulusConn::MASTER) return actionForReplConfMaster();
         if (conn->getRole() == RomulusConn::SLAVE) return actionForReplConfSlave();
 
+        PRINT_ERROR("WTF IS THE ROLE FOR THIS CONN?");
         return false;
     }
 
@@ -309,7 +320,9 @@ namespace ProtocolID {
         PRINT_SUCCESS("Activating listener");
         conn->startProcessingBytes();
 
-        std::string response = ProtocolUtils::constructProtocol({"REPLCONF", "ACK", std::to_string(conn->getBytesProcessed())}, ProtocolTypes::ResponseType::ARRAY);
+        std::string response = ProtocolUtils::constructArray(
+            {"REPLCONF", "ACK", std::to_string(conn->getBytesProcessed())}
+        );
         rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
@@ -317,7 +330,9 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForPsync() {
 
-        std::string response = ProtocolUtils::constructProtocol({"+FULLRESYNC", conn->getId(), "0"}, ProtocolTypes::ResponseType::SSTRING);
+        std::string response = ProtocolUtils::constructSimpleString(
+            {"+FULLRESYNC", conn->getId(), "0"}
+        );
         rObject = new ProtocolUtils::ReturnObject(response);
         conn->sendDBFile = true;
 
@@ -337,7 +352,6 @@ namespace ProtocolID {
 
         pIsWaiting = true;
 
-        PRINT_HIGHLIGHT("ON WAIT");
         RomulusConn::Master* mConn = static_cast<RomulusConn::Master*>(conn);
         mConn->setReplicasToAck(std::stoi(splittedBuffer[1]));
         unsigned short milliseconds = std::stoi(splittedBuffer[2]);
@@ -345,17 +359,17 @@ namespace ProtocolID {
         std::unique_lock<std::mutex> lock(mtx);
         std::thread(&RomulusConn::Master::getReplicasACKs, mConn).detach();
 
-
+        // Better this to interrupt before timeout
         if (mConn->getReplicasToAck() > 0) {
-            PRINT_HIGHLIGHT("TO WAIT " + splittedBuffer[1]);
+            // PRINT_HIGHLIGHT("TO WAIT " + splittedBuffer[1]);
 
             if (!cv.wait_for(lock, std::chrono::milliseconds(milliseconds), [this, mConn] {
                 return interruptFlag.load();
             })) {
-                PRINT_ERROR("TIMEOUT REACHED");
+                // PRINT_ERROR("TIMEOUT REACHED");
             }
 
-            PRINT_HIGHLIGHT("BREAKING WAITING");
+            // PRINT_HIGHLIGHT("BREAKING WAITING");
         } else {
             setReplicasOscarKilo(mConn->getReplicasToAck());
         }

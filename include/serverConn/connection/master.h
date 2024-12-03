@@ -21,8 +21,12 @@ namespace RomulusConn {
             unsigned short getNumReplicas();
             unsigned short getReplicasToAck();
             unsigned short getReplicasOscarKilo();
+            std::string getRole() const override;
 
-            void propagueProtocolToReplica(ProtocolID::ProtocolIdentifier *idt, const std::string& buffer);
+            void propagueProtocolToReplica(
+                ProtocolID::ProtocolIdentifier *idt,
+                const std::string& buffer
+            );
 
             void createCurrentReplicaConn();
             void setCurrentReplicaPort(unsigned short value);

@@ -7,11 +7,25 @@
 
 namespace RomulusConn {
 
-    Slave::Slave(unsigned short port, std::string host, std::string dirName, std::string fileName) :
-    BaseConnection(port, SLAVE, host, dirName, fileName),
+    Slave::Slave(
+        unsigned short port,
+        std::string host,
+        std::string dirName,
+        std::string fileName
+    ) :
+    BaseConnection(port, host, dirName, fileName),
     handShakedWithMaster {},
     master {nullptr}
     {
+        if (getConnectionStatus()) PRINT_SUCCESS("Connection Stablished at port: " + std::to_string(port) + " As " +  getRole());
+    }
+
+    std::string Slave::getMasterHost() {
+        return masterHost;
+    }
+
+    std::string Slave::getRole() const {
+        return SLAVE;
     }
 
     bool Slave::isInHandShake() {
@@ -53,10 +67,6 @@ namespace RomulusConn {
         masterPort = port;
         masterServerFD = serverFD;
         masterHost = host == "localhost" ? "127.0.0.1" : host;
-    }
-
-    std::string Slave::getMasterHost() {
-        return masterHost;
     }
 
     unsigned short Slave::getMasterPort() {

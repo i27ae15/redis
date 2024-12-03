@@ -31,11 +31,15 @@ namespace RomulusConn {
 
     class BaseConnection {
 
+        // Abstract class to manage Slave and Master connection
+
         public:
 
         BaseConnection(
-            unsigned short port, std::string role, std::string host,
-            std::string dirName = "", std::string fileName = ""
+            unsigned short port,
+            std::string host,
+            std::string dirName = "",
+            std::string fileName = ""
         );
 
         int rs;
@@ -59,14 +63,17 @@ namespace RomulusConn {
         std::string getFileName();
         std::string getId();
 
-        void setProtocolIdr(ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite = false);
+        void setProtocolIdr(
+            ProtocolID::ProtocolIdentifier* protocolIdr,
+            bool overWrite = false
+        );
         void setDbManager(RomulusDB::DbManager* dbManager, bool overWrite = false);
 
         std::string getDbFile();
 
         ProtocolID::ProtocolIdentifier* getProtocolIdr();
         RomulusDB::DbManager* getDbManager();
-        std::string getRole();
+        virtual std::string getRole() const = 0;
 
         // Setters
 
@@ -94,7 +101,6 @@ namespace RomulusConn {
 
             std::string dirName;
             std::string fileName;
-            std::string role;
             std::string host;
 
             unsigned short port;

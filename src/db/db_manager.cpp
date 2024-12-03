@@ -133,9 +133,14 @@ namespace RomulusDB {
         return getCurrentUnixTimeInMs() / 1000;
     }
 
-    void DbManager::parseDatabase() {
+    void DbManager::parseDatabase(bool forceParsing) {
 
-        if (db != nullptr) throw std::runtime_error("Db has been already parsed");
+        if (db != nullptr && !forceParsing) {
+            PRINT_ERROR("DB HAS ALREADY BEEN PARSED, IF WANT TO PARSE AGAIN, SET FORCE_PARSING TO TRUE");
+            return;
+        }
+
+        if (db != nullptr && forceParsing) PRINT_WARNING("PARSING DB AGAIN");
 
         openFile();
         parseHeader();
