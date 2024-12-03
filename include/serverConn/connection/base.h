@@ -104,7 +104,7 @@ namespace RomulusConn {
             std::string host;
 
             unsigned short port;
-            unsigned short serverFD;
+            short serverFD;
 
             bool connectionStatus;
 

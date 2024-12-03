@@ -17,7 +17,7 @@ namespace RomulusConn {
     handShakedWithMaster {},
     master {nullptr}
     {
-        if (getConnectionStatus()) PRINT_SUCCESS("Connection Stablished at port: " + std::to_string(port) + " As " +  getRole());
+        if (getConnectionStatus()) print("Connection Stablished at port: " + std::to_string(port), GREEN);
     }
 
     std::string Slave::getMasterHost() {
@@ -26,6 +26,23 @@ namespace RomulusConn {
 
     std::string Slave::getRole() const {
         return SLAVE;
+    }
+
+    unsigned short Slave::getMasterPort() {
+        return masterPort;
+    }
+
+    short Slave::getMasterServerFD() {
+
+        if (masterServerFD == -1) {
+            masterServerFD = socket(AF_INET, SOCK_STREAM, 0);
+        }
+
+        if (masterServerFD < 0) {
+            PRINT_ERROR("Failed to create master socket");
+        }
+
+        return masterServerFD;
     }
 
     bool Slave::isInHandShake() {
@@ -43,11 +60,11 @@ namespace RomulusConn {
         master_addr.sin_port = htons(getMasterPort());
         master_addr.sin_addr.s_addr = INADDR_ANY;
 
-        unsigned short serverFD = getMasterServerFD();
+        short serverFD = getMasterServerFD();
 
         inet_pton(AF_INET, getMasterHost().c_str(), &master_addr.sin_addr);
         if (connect(serverFD, (struct sockaddr *) &master_addr, sizeof(master_addr)) != 0) {
-            PRINT_ERROR("Error connecting");
+            print("ERROR CONNECTION WITH MASTER", RED);
             return;
         }
 
@@ -63,27 +80,10 @@ namespace RomulusConn {
         assignMaster(master->getPort(), master->getServerFD(), master->getHost());
     }
 
-    void Slave::assignMaster(unsigned short port, unsigned short serverFD, std::string host) {
+    void Slave::assignMaster(unsigned short port, short serverFD, std::string host) {
         masterPort = port;
         masterServerFD = serverFD;
         masterHost = host == "localhost" ? "127.0.0.1" : host;
-    }
-
-    unsigned short Slave::getMasterPort() {
-        return masterPort;
-    }
-
-    unsigned short Slave::getMasterServerFD() {
-
-        if (masterServerFD == -1) {
-            masterServerFD = socket(AF_INET, SOCK_STREAM, 0);
-        }
-
-        if (masterServerFD < 0) {
-            PRINT_ERROR("Failed to create master socket");
-        }
-
-        return masterServerFD;
     }
 
 }

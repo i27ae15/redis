@@ -20,11 +20,11 @@
 
 
 // Utility macros for easy colored output
-#define PRINT_SUCCESS(text)      std::cout << GREEN << text << RESET << "\n"
+#define PRINT_SUCCESS(text)      std::cout << GREEN  << text << RESET << "\n"
 #define PRINT_WARNING(text)      std::cout << YELLOW << text << RESET << "\n"
-#define PRINT_ERROR(text)        std::cout << RED << text << RESET << "\n"
-#define PRINT_HIGHLIGHT(text)    std::cout << PINK << text << RESET << "\n"
-#define PRINT_COLOR(color, text) std::cout << color << text << RESET << "\n"
+#define PRINT_ERROR(text)        std::cout << RED    << text << RESET << "\n"
+#define PRINT_HIGHLIGHT(text)    std::cout << PINK   << text << RESET << "\n"
+#define PRINT_COLOR(color, text) std::cout << color  << text << RESET << "\n"
 
 namespace RomulusUtils {
     std::vector<std::string> splitString(const std::string& str, const std::string& delimiter);

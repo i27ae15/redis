@@ -71,11 +71,19 @@ namespace ConnInitializer {
 
         // Check if we don't have a master
         if (!masterPort) {
-            configs.conns.emplace_back(RomulusConnStructs::connConf{dirName, fileName, host, RomulusConn::MASTER, port});
+            configs.conns.emplace_back(
+                RomulusConnStructs::connConf{
+                    dirName, fileName, host, RomulusConn::MASTER, port
+                }
+            );
             masterPort = port;
             masterHost = host;
         } else {
-            configs.conns.emplace_back(RomulusConnStructs::connConf{dirName, fileName, host, RomulusConn::SLAVE, port});
+            configs.conns.emplace_back(
+                RomulusConnStructs::connConf{
+                    dirName, fileName, host, RomulusConn::SLAVE, port
+                }
+            );
         }
 
         configs.masterHost = masterHost;
@@ -84,9 +92,14 @@ namespace ConnInitializer {
         return configs;
     }
 
-    std::vector<RomulusConn::BaseConnection*> initializeConnections(int argc, char **argv) {
+    std::vector<RomulusConn::BaseConnection*> initializeConnections(
+        int argc,
+        char **argv
+    ) {
 
-        RomulusConnStructs::connConfigs connConfigs = configInitializer(argc, argv);
+        RomulusConnStructs::connConfigs connConfigs = configInitializer(
+            argc, argv
+        );
         std::vector<RomulusConn::BaseConnection*> conns {};
 
         for (RomulusConnStructs::connConf connConf : connConfigs.conns) {
@@ -107,7 +120,11 @@ namespace ConnInitializer {
                     connConf.dirName,
                     connConf.fileName
                 );
-                slaveConn->assignMaster(connConfigs.masterPort, -1, connConfigs.masterHost);
+                slaveConn->assignMaster(
+                    connConfigs.masterPort,
+                    -1,
+                    connConfigs.masterHost
+                );
                 slaveConn->handShakeWithMaster();
                 newConn = slaveConn;
             }

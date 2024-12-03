@@ -26,7 +26,16 @@ namespace RomulusParser {
             index++;
         }
 
-        return static_cast<unsigned char>(std::stoi(nVar));
+        // The error might be here
+        unsigned char rValue {};
+        try {
+            rValue = static_cast<unsigned char>(std::stoi(nVar));
+        } catch (const std::invalid_argument) {
+            PRINT_ERROR("STOI: " + nVar);
+            throw;
+        }
+
+        return rValue;
     }
 
     ParseCommand parserArray(unsigned short& index, const char* buffer) {
