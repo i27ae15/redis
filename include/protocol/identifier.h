@@ -67,11 +67,11 @@ namespace ProtocolID {
 
         void setInProcess(bool value);
         void setReplicasOscarKilo(unsigned short n);
+        void interruptWait();
 
         // Shared state that will be passed to the child
         std::string getIdFromBuffer();
 
-        void interruptWait();
         static bool getProIsWaiting();
 
         private:
