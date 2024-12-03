@@ -39,6 +39,7 @@ namespace ProtocolID {
     constexpr const char* PSYNC = "PSYNC";
     constexpr const char* FULLRESYNC = "FULLRESYNC";
     constexpr const char* WAIT = "WAIT";
+    constexpr const char* INCR = "INCR";
 
     constexpr const char* PONG = "PONG";
     constexpr const char* OK = "OK";
@@ -111,5 +112,6 @@ namespace ProtocolID {
         bool actionForPsync();
         bool actionForFullResync();
         bool actionForWait();
+        bool actionForIncr();
     };
 }

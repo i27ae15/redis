@@ -23,12 +23,52 @@
 #include <serverConn/connection/slave.h>
 #include <serverConn/connection/structs.h>
 
+#include <protocol/utils.h>
+
 #include <db/db_manager.h>
 
 #include <protocol/identifier.h>
 
 
 namespace ConnInitializer {
+
+    void replicaHandShake(
+        RomulusConn::BaseConnection* conn,
+        std::string buffer,
+        int clientFD
+    ) {
+        std::string response {};
+
+        switch (conn->rs) {
+            case 0:
+                // Response after pong
+                if (buffer.substr(0, 4) != ProtocolID::PONG) return;
+                response = ProtocolUtils::constructArray(
+                    {"REPLCONF", "listening-port", std::to_string(conn->getPort())}
+                );
+                send(clientFD, response.c_str(), response.size(), 0);
+                conn->rs++;
+                break;
+
+            case 1:
+                // Response after first OK
+                response = ProtocolUtils::constructArray({"REPLCONF", "capa", "psync2"});
+                send(clientFD, response.c_str(), response.size(), 0);
+                conn->rs++;
+                break;
+
+            case 2:
+                // Response after second OK
+                conn->rs++;
+                conn->replicaHand = false;
+                response = ProtocolUtils::constructArray({"PSYNC", "?", "-1"});
+                send(clientFD, response.c_str(), response.size(), 0);
+                PRINT_SUCCESS("Hand shake stablished: " + std::to_string(clientFD));
+                break;
+            default:
+                break;
+        }
+    }
 
     RomulusConnStructs::connConfigs configInitializer(int argc, char** argv) {
 

@@ -27,34 +27,6 @@ namespace ConnManager {
     std::mutex qMutex;
     std::queue<RomulusParser::ParseCommand> commandQueue;
 
-    bool replicaHandShake(RomulusConn::BaseConnection* conn, std::string buffer, int clientFD) {
-        std::string response {};
-
-        if (conn->rs == 0) {
-            // Response after pong
-            if (buffer.substr(0, 4) != ProtocolID::PONG) return false;
-            response = ProtocolUtils::constructProtocol({"REPLCONF", "listening-port", std::to_string(conn->getPort())}, ProtocolTypes::ResponseType::ARRAY);
-            send(clientFD, response.c_str(), response.size(), 0);
-            conn->rs++;
-
-        } else if (conn->rs == 1) {
-            // Response after first OK
-            response = ProtocolUtils::constructProtocol({"REPLCONF", "capa", "psync2"}, ProtocolTypes::ResponseType::ARRAY);
-            send(clientFD, response.c_str(), response.size(), 0);
-            conn->rs++;
-
-        } else if (conn->rs == 2) {
-            // Response after second OK
-            conn->rs++;
-            conn->replicaHand = false;
-            response = ProtocolUtils::constructProtocol({"PSYNC", "?", "-1"}, ProtocolTypes::ResponseType::ARRAY);
-            send(clientFD, response.c_str(), response.size(), 0);
-            PRINT_SUCCESS("Hand shake stablished: " + std::to_string(clientFD));
-        }
-
-        return true;
-    }
-
     void handleResponse(
         RomulusConn::BaseConnection* conn,
         std::string rawBuffer,
@@ -63,12 +35,13 @@ namespace ConnManager {
     ) {
 
         if (conn->replicaHand) {
-            if (replicaHandShake(conn, command.command, clientFD)) return;
+            ConnInitializer::replicaHandShake(conn, command.command, clientFD);
+            return;
         }
 
         ProtocolID::ProtocolIdentifier* cIdentifier = conn->getProtocolIdr();
-
         cIdentifier->identifyProtocol(rawBuffer, command.command, command.size);
+
         ProtocolUtils::ReturnObject* rObject = cIdentifier->getRObject();
         // PRINT_HIGHLIGHT("SENDING BACK: " + rObject->return_value);
 

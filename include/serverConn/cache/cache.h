@@ -7,9 +7,14 @@
 
 namespace Cache {
 
-    struct CacheValue {
+    struct strCacheValue {
         std::string value;
-        std::optional<std::chrono::time_point<std::chrono::system_clock>> expired_date;
+        std::optional<std::chrono::time_point<std::chrono::system_clock>> expiredDate;
+    };
+
+    struct intCacheValue {
+        int value;
+        std::optional<std::chrono::time_point<std::chrono::system_clock>> expiredDate;
     };
 
     class DataManager {
@@ -19,14 +24,29 @@ namespace Cache {
         DataManager();
         ~DataManager();
 
-        void setValue(std::string key, std::string value, bool expires, size_t expiresIn = 0);
+        void setValue(
+            std::string key,
+            std::string value,
+            bool expires,
+            size_t expiresIn = 0
+        );
+
+        bool incrementValue(std::string key);
+
         std::optional<std::string> getValue(std::string key);
 
         private:
 
+        bool canConvertToInt(const std::string& str);
+
+        bool hasExpired (std::optional<std::chrono::time_point<std::chrono::system_clock>> dt);
+        std::optional<std::string> checkCache(strCacheValue value);
+        std::optional<std::string> checkCache(intCacheValue value);
+
         // Implement a better cache to accept int, float, bool
         // among more complex data structures like vectors and maps
-        static std::unordered_map<std::string, CacheValue> cache;
+        static std::unordered_map<std::string, strCacheValue> strCache;
+        static std::unordered_map<std::string, intCacheValue> intCache;
     };
 
 }

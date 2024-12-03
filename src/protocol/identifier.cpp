@@ -35,7 +35,8 @@ namespace ProtocolID {
         {REPLCONF, [this]() { return actionForReplConf(); }},
         {PSYNC, [this]() { return actionForPsync(); }},
         {FULLRESYNC, [this]() { return actionForFullResync(); }},
-        {WAIT, [this]() { return actionForWait(); }}
+        {WAIT, [this]() { return actionForWait(); }},
+        {INCR, [this]() { return actionForIncr(); }},
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {}
@@ -174,6 +175,7 @@ namespace ProtocolID {
             this,
             rawBuffer
         ).detach();
+
         return true;
     }
 
@@ -390,11 +392,26 @@ namespace ProtocolID {
         return true;
     }
 
+    bool ProtocolIdentifier::actionForIncr() {
+
+        std::string key = splittedBuffer[1];
+
+        Cache::DataManager cache;
+        cache.incrementValue(key);
+
+        rObject = new ProtocolUtils::ReturnObject(
+            ProtocolUtils::constructInteger({cache.getValue(key).value()})
+        );
+
+        return true;
+    }
+
     void ProtocolIdentifier::interruptWait() {
         PRINT_SUCCESS("INTERRUPTING WAIT");
         std::lock_guard<std::mutex> lock(mtx);
         interruptFlag.store(true);
         cv.notify_all();
     }
+
 
 }

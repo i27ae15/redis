@@ -7,6 +7,12 @@ namespace RomulusConn {
 }
 
 namespace ConnInitializer {
+    void replicaHandShake(
+        RomulusConn::BaseConnection* conn,
+        std::string buffer,
+        int clientFD
+    );
     RomulusConnStructs::connConfigs configInitializer(int argc, char** argv);
     std::vector<RomulusConn::BaseConnection*> initializeConnections(int argc, char **argv);
+
 }
