@@ -17,9 +17,16 @@ namespace Cache {
         return (iss >> num) && (iss.eof());
     }
 
-    void DataManager::incrementValue(std::string key) {
-        if (!intCache.count(key)) {setValue(key, "1", false); return;}
-        intCache[key].value++;
+    bool DataManager::incrementValue(std::string key) {
+        if (strCache.count(key)) return false;
+
+        if (!intCache.count(key)) {
+            setValue(key, "1", false);
+        } else {
+            intCache[key].value++;
+        }
+
+        return true;
     }
 
     void DataManager::setValue(

@@ -381,7 +381,7 @@ namespace ProtocolID {
         unsigned short ACKs = mConn->getReplicasOscarKilo();
         if (!pWrite) ACKs = mConn->getNumReplicas();
 
-        std::string response = ProtocolUtils::constructInteger({std::to_string(ACKs)});
+        std::string response = ProtocolUtils::constructInteger(std::to_string(ACKs));
         rObject = new ProtocolUtils::ReturnObject(response);
 
         mConn->setReplicasToAck(0);
@@ -395,13 +395,17 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForIncr() {
 
         std::string key = splittedBuffer[1];
-
         Cache::DataManager cache;
-        cache.incrementValue(key);
 
-        rObject = new ProtocolUtils::ReturnObject(
-            ProtocolUtils::constructInteger({cache.getValue(key).value()})
-        );
+        if (!cache.incrementValue(key)) {
+            rObject = new ProtocolUtils::ReturnObject(
+                ProtocolUtils::constructError("value is not an integer or out of range")
+            );
+        } else {
+            rObject = new ProtocolUtils::ReturnObject(
+                ProtocolUtils::constructInteger(cache.getValue(key).value())
+            );
+        }
 
         return true;
     }

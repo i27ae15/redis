@@ -31,7 +31,7 @@ namespace Cache {
             size_t expiresIn = 0
         );
 
-        void incrementValue(std::string key);
+        bool incrementValue(std::string key);
 
         std::optional<std::string> getValue(std::string key);
 

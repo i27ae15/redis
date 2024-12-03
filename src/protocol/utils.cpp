@@ -19,21 +19,19 @@ namespace ProtocolUtils {
         if (rType == ProtocolTypes::ResponseType::SSTRING) return constructSimpleString(args);
         if (rType == ProtocolTypes::ResponseType::RBSTRING) return constructRestBulkString(args);
         if (rType == ProtocolTypes::ResponseType::BSTRING) return constructBulkString(args);
-        if (rType == ProtocolTypes::ResponseType::INTEGER) return constructInteger(args);
+        if (rType == ProtocolTypes::ResponseType::INTEGER) return constructInteger(args[0]);
+        if (rType == ProtocolTypes::ResponseType::ERROR) return constructError(args[0]);
 
         PRINT_ERROR("ERROR CONSTRUCTING PROTOCOL - NO VALID PROTOCOL PASSED: " + std::to_string(ProtocolTypes::BSTRING));
         return "";
     }
 
-    std::string constructInteger(const std::vector<std::string> args) {
+    std::string constructError(const std::string msg) {
+        return "-ERR " + msg + "\r\n";
+    }
 
-        std::string response {};
-
-        for (std::string arg : args) {
-            response += ":" + arg + "\r\n";
-        }
-
-        return response;
+    std::string constructInteger(const std::string integer) {
+        return ":" + integer + "\r\n";
     }
 
     std::string constructBulkString(const std::vector<std::string> args) {
