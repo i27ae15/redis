@@ -14,7 +14,7 @@
 #include <condition_variable>
 #include <mutex>
 
-#include <cache.h>
+#include <serverConn/cache/cache.h>
 #include <utils.h>
 #include <regex>
 
@@ -22,8 +22,8 @@ namespace ProtocolUtils {
     class ReturnObject;
 }
 
-namespace RemusConn {
-    class ConnectionManager;
+namespace RomulusConn {
+    class BaseConnection;
 }
 
 namespace ProtocolID {
@@ -48,7 +48,7 @@ namespace ProtocolID {
 
         public:
 
-        ProtocolIdentifier(RemusConn::ConnectionManager* conn);
+        ProtocolIdentifier(RomulusConn::BaseConnection* conn);
         ~ProtocolIdentifier();
 
         ProtocolUtils::ReturnObject* getRObject();
@@ -79,7 +79,7 @@ namespace ProtocolID {
 
         bool inProcess;
 
-        RemusConn::ConnectionManager* conn;
+        RomulusConn::BaseConnection* conn;
         ProtocolUtils::ReturnObject* rObject;
 
         std::string buffer;

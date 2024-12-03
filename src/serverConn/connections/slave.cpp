@@ -1,12 +1,14 @@
-#include <serverConn/slave.h>
-#include <serverConn/master.h>
-#include <serverConn/conn_manager.h>
+#include <serverConn/manager/manager.h>
+
+#include <serverConn/connection/slave.h>
+#include <serverConn/connection/master.h>
+
 #include <protocol/utils.h>
 
-namespace RemusConn {
+namespace RomulusConn {
 
     Slave::Slave(unsigned short port, std::string host, std::string dirName, std::string fileName) :
-    ConnectionManager(port, SLAVE, host, dirName, fileName),
+    BaseConnection(port, SLAVE, host, dirName, fileName),
     handShakedWithMaster {},
     master {nullptr}
     {

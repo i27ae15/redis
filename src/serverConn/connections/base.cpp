@@ -1,15 +1,15 @@
-#include <serverConn/server_connection.h>
-#include <serverConn/slave.h>
-#include <serverConn/master.h>
+#include <serverConn/connection/base.h>
+#include <serverConn/connection/slave.h>
+#include <serverConn/connection/master.h>
 
 #include <protocol/identifier.h>
 #include <protocol/utils.h>
 
 #include <db/db_manager.h>
 
-namespace RemusConn {
+namespace RomulusConn {
 
-    ConnectionManager::ConnectionManager(
+    BaseConnection::BaseConnection(
         unsigned short port, std::string role, std::string host,
         std::string dirName, std::string fileName) :
         rs {},
@@ -35,63 +35,63 @@ namespace RemusConn {
         if (connectionStatus) PRINT_SUCCESS("Connection Stablished at port: " + std::to_string(port) + " As " + role);
     }
 
-    ConnectionManager::~ConnectionManager() {
+    BaseConnection::~BaseConnection() {
         close(serverFD);
     }
 
     // GETTERS
 
-    unsigned short ConnectionManager::getServerFD() {return serverFD;}
+    unsigned short BaseConnection::getServerFD() {return serverFD;}
 
-    unsigned short ConnectionManager::getPort() {return port;}
+    unsigned short BaseConnection::getPort() {return port;}
 
-    bool ConnectionManager::getConnectionStatus() {return connectionStatus;}
+    bool BaseConnection::getConnectionStatus() {return connectionStatus;}
 
-    std::string ConnectionManager::getDirName() {return dirName;}
+    std::string BaseConnection::getDirName() {return dirName;}
 
-    std::string ConnectionManager::getFileName() {return fileName;}
+    std::string BaseConnection::getFileName() {return fileName;}
 
-    std::string ConnectionManager::getRole() {return role;}
+    std::string BaseConnection::getRole() {return role;}
 
-    std::string ConnectionManager::getHost() {return host;}
+    std::string BaseConnection::getHost() {return host;}
 
-    std::string ConnectionManager::getId() {return id;}
+    std::string BaseConnection::getId() {return id;}
 
-    std::string ConnectionManager::getDbFile() {return dbManager->getDbFile();}
+    std::string BaseConnection::getDbFile() {return dbManager->getDbFile();}
 
-    unsigned int ConnectionManager::getBytesProcessed() {return bytesProcessed;}
+    unsigned int BaseConnection::getBytesProcessed() {return bytesProcessed;}
 
     // SETTERS
 
-    void ConnectionManager::addBytesProcessed(unsigned short bytes) {
+    void BaseConnection::addBytesProcessed(unsigned short bytes) {
         // PRINT_HIGHLIGHT("ADDING BYTES " + std::to_string(bytes.size()));
         if (listenToBytes) bytesProcessed += bytes;
     }
 
-    void ConnectionManager::startProcessingBytes() {
+    void BaseConnection::startProcessingBytes() {
         listenToBytes = true;
     }
 
-    void ConnectionManager::print(std::string msg, std::string color) {
-        if (getRole() == RemusConn::SLAVE) {
+    void BaseConnection::print(std::string msg, std::string color) {
+        if (getRole() == RomulusConn::SLAVE) {
             msg = "REPLICA SAYS: " + msg;
             PRINT_COLOR(color, msg);
 
-        } else if (getRole() == RemusConn::MASTER) {
+        } else if (getRole() == RomulusConn::MASTER) {
             msg = "MASTER SAYS: " + msg;
             PRINT_COLOR(color, msg);
         }
     }
 
-    void ConnectionManager::print(std::string msg) {
-        if (getRole() == RemusConn::SLAVE) {
+    void BaseConnection::print(std::string msg) {
+        if (getRole() == RomulusConn::SLAVE) {
             print(msg, BLUE);
-        } else if (getRole() == RemusConn::MASTER) {
+        } else if (getRole() == RomulusConn::MASTER) {
             print(msg, WHITE);
         }
     }
 
-    ProtocolID::ProtocolIdentifier* ConnectionManager::getProtocolIdr() {
+    ProtocolID::ProtocolIdentifier* BaseConnection::getProtocolIdr() {
 
         if (!protocolIdr->getInProcess()) return protocolIdr;
 
@@ -108,13 +108,13 @@ namespace RemusConn {
         return protocolIdr;
     }
 
-    RemusDB::DbManager* ConnectionManager::getDbManager() {
+    RomulusDB::DbManager* BaseConnection::getDbManager() {
         return dbManager;
     }
 
     // Setters
 
-    void ConnectionManager::setProtocolIdr(
+    void BaseConnection::setProtocolIdr(
         ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite
     ) {
 
@@ -131,25 +131,25 @@ namespace RemusConn {
         this->protocolIdr = protocolIdr;
     }
 
-    void ConnectionManager::setDbManager(
-        RemusDB::DbManager* dbManager, bool overWrite
+    void BaseConnection::setDbManager(
+        RomulusDB::DbManager* dbManager, bool overWrite
     ) {
         if (this->dbManager == nullptr) this->dbManager = dbManager; return;
 
         if (!overWrite) {
-            PRINT_ERROR("There is already a RemusDB::DbManager linked to this object!");
+            PRINT_ERROR("There is already a RomulusDB::DbManager linked to this object!");
             PRINT_ERROR("If you want to overwrite it, set overWrite to true");
             return;
         }
 
-        PRINT_WARNING("Overwritting and deleting RemusDB::DbManager object!");
+        PRINT_WARNING("Overwritting and deleting RomulusDB::DbManager object!");
         delete this->dbManager;
         this->dbManager = dbManager;
     }
 
     // METHODS
 
-    void ConnectionManager::createSocket() {
+    void BaseConnection::createSocket() {
         int serverFD = socket(AF_INET, SOCK_STREAM, 0);
         if (serverFD < 0) {
             PRINT_ERROR("Failed to create server socket");
@@ -160,7 +160,7 @@ namespace RemusConn {
         this->serverFD = serverFD;
     }
 
-    void ConnectionManager::checkAddress() {
+    void BaseConnection::checkAddress() {
 
         // Since the tester restarts your program quite often, setting SO_REUSEADDR
         // ensures that we don't run into 'Address already in use' errors
@@ -184,7 +184,7 @@ namespace RemusConn {
 
     }
 
-    void ConnectionManager::checkConnection() {
+    void BaseConnection::checkConnection() {
         int connection_backlog = 5;
         if (listen(serverFD, connection_backlog) != 0) {
             PRINT_ERROR("listen failed");

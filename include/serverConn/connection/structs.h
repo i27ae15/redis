@@ -4,7 +4,7 @@
 
 #include <utils.h>
 
-namespace RemusConnStructs {
+namespace RomulusConnStructs {
 
     struct connConf {
         std::string dirName;

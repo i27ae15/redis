@@ -9,25 +9,25 @@
 #include <queue>
 #include <mutex>
 
-#include <serverConn/structs.h>
-#include <serverConn/server_connection.h>
-#include <serverConn/master.h>
+#include <serverConn/connection/structs.h>
+#include <serverConn/connection/base.h>
+#include <serverConn/connection/master.h>
+#include <serverConn/connection/slave.h>
 
 #include <protocol/identifier.h>
 #include <protocol/utils.h>
 
-#include <serverConn/initializers.h>
-#include <serverConn/slave.h>
-#include <serverConn/parser.h>
+#include <serverConn/manager/initializers.h>
+#include <serverConn/parser/parser.h>
 
 #include <utils.h>
 
 
 namespace ConnManager {
     std::mutex qMutex;
-    std::queue<RemusParser::ParseCommand> commandQueue;
+    std::queue<RomulusParser::ParseCommand> commandQueue;
 
-    bool replicaHandShake(RemusConn::ConnectionManager* conn, std::string buffer, int clientFD) {
+    bool replicaHandShake(RomulusConn::BaseConnection* conn, std::string buffer, int clientFD) {
         std::string response {};
 
         if (conn->rs == 0) {
@@ -56,9 +56,9 @@ namespace ConnManager {
     }
 
     void handleResponse(
-        RemusConn::ConnectionManager* conn,
+        RomulusConn::BaseConnection* conn,
         std::string rawBuffer,
-        RemusParser::ParseCommand command,
+        RomulusParser::ParseCommand command,
         int clientFD
     ) {
 
@@ -80,26 +80,26 @@ namespace ConnManager {
             send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
             conn->sendDBFile = false;
 
-            RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+            RomulusConn::Master* masterConn = static_cast<RomulusConn::Master*>(conn);
             masterConn->setCurrentReplicaServerFd(clientFD);
             masterConn->addAndCleanCurrentReplicaConn();
             masterConn->inHandShakeWithReplica = false;
         }
     }
 
-    void responseRouter(const char* buffer, size_t size, RemusConn::ConnectionManager* conn, int clientFD) {
+    void responseRouter(const char* buffer, size_t size, RomulusConn::BaseConnection* conn, int clientFD) {
 
-        RemusParser::ParseCommand command {};
+        RomulusParser::ParseCommand command {};
 
         for (unsigned short i {}; i < size; i++) {
 
             unsigned char byte = static_cast<unsigned char>(buffer[i]);
 
             if (byte == ProtocolTypes::ARRAY) {
-                command = RemusParser::parserArray(++i, buffer);
+                command = RomulusParser::parserArray(++i, buffer);
             }
             else if (byte == ProtocolTypes::SSTRING) {
-                command = RemusParser::parserString(++i, buffer, size);
+                command = RomulusParser::parserString(++i, buffer, size);
             } else {
                 continue;
             }
@@ -112,7 +112,7 @@ namespace ConnManager {
         // Launch a thread to process the queue
         std::thread([conn, clientFD, buffer]() {
             while (!commandQueue.empty()) {
-                RemusParser::ParseCommand command;
+                RomulusParser::ParseCommand command;
                 {
                     std::lock_guard<std::mutex> lock(qMutex);
                     if (!commandQueue.empty()) {
@@ -125,7 +125,7 @@ namespace ConnManager {
         }).detach();
     }
 
-    void handleConnection(RemusConn::ConnectionManager* conn, int clientFD) {
+    void handleConnection(RomulusConn::BaseConnection* conn, int clientFD) {
         constexpr size_t BUFFER_SIZE = 1048;
 
         char buffer[BUFFER_SIZE];
@@ -142,13 +142,13 @@ namespace ConnManager {
 
             if (bytesReceived < BUFFER_SIZE) buffer[bytesReceived] = '\0';
 
-            // RemusUtils::printMixedBytes(buffer, bytesReceived);
+            // RomulusUtils::printMixedBytes(buffer, bytesReceived);
             responseRouter(buffer, bytesReceived, conn, clientFD);
         }
         close(clientFD);
     }
 
-    void listener(RemusConn::ConnectionManager* conn, int serverFD) {
+    void listener(RomulusConn::BaseConnection* conn, int serverFD) {
         PRINT_SUCCESS("Listener Started On ServerFD: " + std::to_string(serverFD));
 
         std::vector<std::thread> threads {};
@@ -165,9 +165,9 @@ namespace ConnManager {
     void serverLoop(int argc, char **argv) {
 
         std::vector<std::thread> connThreads {};
-        std::vector<RemusConn::ConnectionManager*> connections = ConnInitializer::initializeConnections(argc, argv);
+        std::vector<RomulusConn::BaseConnection*> connections = ConnInitializer::initializeConnections(argc, argv);
 
-        for (RemusConn::ConnectionManager* conn : connections) {
+        for (RomulusConn::BaseConnection* conn : connections) {
             connThreads.emplace_back(std::thread(listener, conn, conn->getServerFD()));
         }
 

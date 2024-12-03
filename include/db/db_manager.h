@@ -5,23 +5,23 @@
 #include <map>
 
 #include <utils.h>
-#include <db/utils.h>
+#include <db/structs.h>
 
-namespace RemusConn {
-    class ConnectionManager;
+namespace RomulusConn {
+    class BaseConnection;
 }
 
-namespace RemusDB {
+namespace RomulusDB {
 
     class DbManager {
 
         public:
 
-        DbManager(RemusConn::ConnectionManager* conn);
+        DbManager(RomulusConn::BaseConnection* conn);
         ~DbManager();
         void parseHeader();
 
-        RemusDBUtils::DatabaseBlock* getDB();
+        RomulusDbStructs::DatabaseBlock* getDB();
 
         std::string getDirName();
         std::string getFileName();
@@ -29,10 +29,10 @@ namespace RemusDB {
 
         private:
 
-        RemusDBUtils::DatabaseBlock* db;
+        RomulusDbStructs::DatabaseBlock* db;
         void parseDatabase();
 
-        RemusConn::ConnectionManager* conn;
+        RomulusConn::BaseConnection* conn;
 
         std::ifstream file;
 

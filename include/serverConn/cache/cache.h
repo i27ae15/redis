@@ -24,7 +24,7 @@ namespace Cache {
 
         private:
 
-        // Implement a better cache to accpet int, float, bool
+        // Implement a better cache to accept int, float, bool
         // among more complex data structures like vectors and maps
         static std::unordered_map<std::string, CacheValue> cache;
     };

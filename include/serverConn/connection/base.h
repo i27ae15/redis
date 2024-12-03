@@ -16,7 +16,7 @@
 
 #include <utils.h>
 
-namespace RemusDB {
+namespace RomulusDB {
     class DbManager;
 }
 
@@ -24,16 +24,16 @@ namespace ProtocolID {
     class ProtocolIdentifier;
 }
 
-namespace RemusConn {
+namespace RomulusConn {
 
     constexpr const char* MASTER = "MASTER";
     constexpr const char* SLAVE = "SLAVE";
 
-    class ConnectionManager {
+    class BaseConnection {
 
         public:
 
-        ConnectionManager(
+        BaseConnection(
             unsigned short port, std::string role, std::string host,
             std::string dirName = "", std::string fileName = ""
         );
@@ -44,7 +44,7 @@ namespace RemusConn {
 
         // Methods
 
-        virtual ~ConnectionManager();
+        virtual ~BaseConnection();
 
         // Getters
 
@@ -60,12 +60,12 @@ namespace RemusConn {
         std::string getId();
 
         void setProtocolIdr(ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite = false);
-        void setDbManager(RemusDB::DbManager* dbManager, bool overWrite = false);
+        void setDbManager(RomulusDB::DbManager* dbManager, bool overWrite = false);
 
         std::string getDbFile();
 
         ProtocolID::ProtocolIdentifier* getProtocolIdr();
-        RemusDB::DbManager* getDbManager();
+        RomulusDB::DbManager* getDbManager();
         std::string getRole();
 
         // Setters
@@ -90,7 +90,7 @@ namespace RemusConn {
             std::vector<ProtocolID::ProtocolIdentifier*> protocols;
 
             ProtocolID::ProtocolIdentifier* protocolIdr;
-            RemusDB::DbManager* dbManager;
+            RomulusDB::DbManager* dbManager;
 
             std::string dirName;
             std::string fileName;

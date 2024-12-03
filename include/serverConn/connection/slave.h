@@ -1,15 +1,19 @@
 #pragma once
-#include <serverConn/server_connection.h>
+#include <serverConn/connection/base.h>
 
-namespace RemusConn {
+namespace RomulusConn {
 
     class Master;
 
-    class Slave : public ConnectionManager {
+    class Slave : public BaseConnection {
 
         public:
-            Slave(unsigned short port, std::string host,
-             std::string dirName = "", std::string fileName = "");
+            Slave(
+                unsigned short port,
+                std::string host,
+                std::string dirName = "",
+                std::string fileName = ""
+            );
 
             void assignMaster(Master* master);
             void assignMaster(unsigned short port, unsigned short serverFD, std::string host);
@@ -32,8 +36,7 @@ namespace RemusConn {
 
             unsigned short handShakeStep;
             unsigned short masterPort;
-            short masterServerFD;
-
+            unsigned short masterServerFD;
     };
 
 }

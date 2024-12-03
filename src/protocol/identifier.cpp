@@ -3,11 +3,11 @@
 #include <chrono>
 #include <memory>
 
-#include <serverConn/server_connection.h>
-#include <serverConn/master.h>
-#include <serverConn/slave.h>
+#include <serverConn/connection/base.h>
+#include <serverConn/connection/master.h>
+#include <serverConn/connection/slave.h>
 
-#include <db/utils.h>
+#include <db/structs.h>
 #include <db/db_manager.h>
 
 #include <protocol/identifier.h>
@@ -18,7 +18,7 @@ namespace ProtocolID {
     bool ProtocolIdentifier::pWrite {};
     bool ProtocolIdentifier::pIsWaiting {};
 
-    ProtocolIdentifier::ProtocolIdentifier(RemusConn::ConnectionManager *conn) :
+    ProtocolIdentifier::ProtocolIdentifier(RomulusConn::BaseConnection *conn) :
     conn {conn},
     protocol {},
     splittedBuffer {},
@@ -78,7 +78,7 @@ namespace ProtocolID {
     // Setters
 
     void ProtocolIdentifier::setReplicasOscarKilo(unsigned short n) {
-        RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+        RomulusConn::Master* mConn = static_cast<RomulusConn::Master*>(conn);
         mConn->setReplicasOscarKilo(0);
     }
 
@@ -87,7 +87,7 @@ namespace ProtocolID {
     }
 
     void ProtocolIdentifier::setSplitedBuffer() {
-        splittedBuffer = RemusUtils::splitString(buffer, " ");
+        splittedBuffer = RomulusUtils::splitString(buffer, " ");
     }
 
     bool ProtocolIdentifier::identifyProtocol(
@@ -125,7 +125,7 @@ namespace ProtocolID {
 
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::PONG_R);
 
-        if (conn->getRole() == RemusConn::SLAVE) rObject->sendResponse = false;
+        if (conn->getRole() == RomulusConn::SLAVE) rObject->sendResponse = false;
 
         return true;
     }
@@ -143,7 +143,7 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForSet() {
         // *3$3set$9pineapple$6banana
         pWrite = true;
-        RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+        RomulusConn::Master* mConn = static_cast<RomulusConn::Master*>(conn);
         mConn->setReplicasOscarKilo(0);
 
         std::string &key = splittedBuffer[1];
@@ -165,12 +165,12 @@ namespace ProtocolID {
         // PRINT_SUCCESS("VALUE SET FOR KEY: " + key + " : " + value);
 
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
-        if (conn->getRole() == RemusConn::SLAVE) {
+        if (conn->getRole() == RomulusConn::SLAVE) {
             rObject->sendResponse = false;
             return true;
         }
 
-        std::thread(&RemusConn::Master::propagueProtocolToReplica, mConn, this, rawBuffer).detach();
+        std::thread(&RomulusConn::Master::propagueProtocolToReplica, mConn, this, rawBuffer).detach();
         return true;
     }
 
@@ -184,7 +184,7 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForGetWithDB() {
 
         std::string key = splittedBuffer[1];
-        RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
+        RomulusDbStructs::DatabaseBlock* db = conn->getDbManager()->getDB();
 
         if (db->keyValue[key].expired) {
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
@@ -242,11 +242,11 @@ namespace ProtocolID {
         if (splittedBuffer[1] != "*") return false;
 
         std::vector<std::string> dbKeys {};
-        RemusDBUtils::DatabaseBlock* db = conn->getDbManager()->getDB();
+        RomulusDbStructs::DatabaseBlock* db = conn->getDbManager()->getDB();
 
         // returning all the keys
-        std::map<std::string, RemusDBUtils::InfoBlock>& keys = db->keyValue;
-        for (std::map<std::string, RemusDBUtils::InfoBlock>::iterator it = keys.begin(); it != keys.end(); ++it) {
+        std::map<std::string, RomulusDbStructs::InfoBlock>& keys = db->keyValue;
+        for (std::map<std::string, RomulusDbStructs::InfoBlock>::iterator it = keys.begin(); it != keys.end(); ++it) {
             dbKeys.push_back(it->first);
          }
 
@@ -273,15 +273,15 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForReplConf() {
 
-        if (conn->getRole() == RemusConn::MASTER) return actionForReplConfMaster();
-        if (conn->getRole() == RemusConn::SLAVE) return actionForReplConfSlave();
+        if (conn->getRole() == RomulusConn::MASTER) return actionForReplConfMaster();
+        if (conn->getRole() == RomulusConn::SLAVE) return actionForReplConfSlave();
 
         return false;
     }
 
     bool ProtocolIdentifier::actionForReplConfMaster() {
 
-        RemusConn::Master* masterConn = static_cast<RemusConn::Master*>(conn);
+        RomulusConn::Master* masterConn = static_cast<RomulusConn::Master*>(conn);
 
         if (!masterConn->inHandShakeWithReplica && splittedBuffer[1] != "ACK") {
             masterConn->inHandShakeWithReplica = true;
@@ -293,7 +293,7 @@ namespace ProtocolID {
 
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
         if (splittedBuffer[1] == "ACK") {
-            RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+            RomulusConn::Master* mConn = static_cast<RomulusConn::Master*>(conn);
             mConn->incrementReplicasOscarKilo();
             rObject->sendResponse = false;
         };
@@ -303,7 +303,7 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForReplConfSlave() {
 
-        RemusConn::Slave* masterConn = static_cast<RemusConn::Slave*>(conn);
+        RomulusConn::Slave* masterConn = static_cast<RomulusConn::Slave*>(conn);
         if (splittedBuffer[1] != GETACK) return false;
 
         PRINT_SUCCESS("Activating listener");
@@ -338,12 +338,12 @@ namespace ProtocolID {
         pIsWaiting = true;
 
         PRINT_HIGHLIGHT("ON WAIT");
-        RemusConn::Master* mConn = static_cast<RemusConn::Master*>(conn);
+        RomulusConn::Master* mConn = static_cast<RomulusConn::Master*>(conn);
         mConn->setReplicasToAck(std::stoi(splittedBuffer[1]));
         unsigned short milliseconds = std::stoi(splittedBuffer[2]);
 
         std::unique_lock<std::mutex> lock(mtx);
-        std::thread(&RemusConn::Master::getReplicasACKs, mConn).detach();
+        std::thread(&RomulusConn::Master::getReplicasACKs, mConn).detach();
 
 
         if (mConn->getReplicasToAck() > 0) {

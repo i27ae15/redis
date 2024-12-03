@@ -1,14 +1,14 @@
 #include <protocol/utils.h>
 #include <protocol/identifier.h>
 
-#include <serverConn/master.h>
-#include <serverConn/structs.h>
+#include <serverConn/connection/master.h>
+#include <serverConn/connection/structs.h>
 
-namespace RemusConn {
+namespace RomulusConn {
     // Master Class
 
     Master::Master(unsigned short port, std::string host, std::string dirName, std::string fileName) :
-    ConnectionManager(port, MASTER, host, dirName, fileName),
+    BaseConnection(port, MASTER, host, dirName, fileName),
     inHandShakeWithReplica {},
     currentReplicaConn {},
     replicaConns {},
@@ -42,12 +42,12 @@ namespace RemusConn {
     }
 
     void Master::createCurrentReplicaConn() {
-        currentReplicaConn = RemusConnStructs::replicaConn();
+        currentReplicaConn = RomulusConnStructs::replicaConn();
     }
 
     void Master::addAndCleanCurrentReplicaConn() {
         replicaConns.push_back(currentReplicaConn);
-        currentReplicaConn = RemusConnStructs::replicaConn();
+        currentReplicaConn = RomulusConnStructs::replicaConn();
     }
 
     void Master::setCurrentReplicaPort(unsigned short value) {
@@ -61,7 +61,7 @@ namespace RemusConn {
     void Master::propagueProtocolToReplica(ProtocolID::ProtocolIdentifier *idt, const std::string& buffer) {
 
         for (size_t i {}; i < getNumReplicas(); i++) {
-            RemusConnStructs::replicaConn &reConn = replicaConns[i];
+            RomulusConnStructs::replicaConn &reConn = replicaConns[i];
             send(reConn.serverFD, buffer.c_str(), buffer.size(), 0);
         }
     }
@@ -71,7 +71,7 @@ namespace RemusConn {
         std::string response = ProtocolUtils::constructArray({"REPLCONF", "GETACK", "*"});
 
         for (size_t i {}; i < getNumReplicas(); i++) {
-            RemusConnStructs::replicaConn &reConn = replicaConns[i];
+            RomulusConnStructs::replicaConn &reConn = replicaConns[i];
             send(reConn.serverFD, response.c_str(), response.size(), 0);
         }
     }

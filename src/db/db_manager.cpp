@@ -5,11 +5,11 @@
 #include <map>
 
 #include <db/db_manager.h>
-#include <serverConn/server_connection.h>
+#include <serverConn/connection/base.h>
 
-namespace RemusDB {
+namespace RomulusDB {
 
-    DbManager::DbManager(RemusConn::ConnectionManager* conn) : conn {conn}, db {nullptr} {}
+    DbManager::DbManager(RomulusConn::BaseConnection* conn) : conn {conn}, db {nullptr} {}
 
     DbManager::~DbManager() {
         if (file.is_open()) file.close();
@@ -34,7 +34,7 @@ namespace RemusDB {
 
     }
 
-    RemusDBUtils::DatabaseBlock* DbManager::getDB() {
+    RomulusDbStructs::DatabaseBlock* DbManager::getDB() {
         if (db == nullptr) parseDatabase();
         return db;
     }
@@ -140,7 +140,7 @@ namespace RemusDB {
         openFile();
         parseHeader();
 
-        RemusDBUtils::DatabaseBlock* db = new RemusDBUtils::DatabaseBlock();
+        RomulusDbStructs::DatabaseBlock* db = new RomulusDbStructs::DatabaseBlock();
 
         // Read Database Start Marker
         uint8_t marker = readByte();
@@ -167,7 +167,7 @@ namespace RemusDB {
 
         // Read Key-Value Pairs
         for (size_t i = 0; i < totalKeys; ++i) {
-            RemusDBUtils::InfoBlock kv;
+            RomulusDbStructs::InfoBlock kv;
 
             // Check for optional expire information
             uint8_t peekByte = file.peek();

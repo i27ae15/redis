@@ -6,13 +6,14 @@
 #include <cstring>
 #include <ctype.h>
 
-#include <serverConn/parser.h>
+#include <serverConn/parser/parser.h>
+
 #include <protocol/utils.h>
 
 #include <utils.h>
 
 
-namespace RemusParser {
+namespace RomulusParser {
 
     unsigned char getVarChars(unsigned short& index, const char* buffer) {
 

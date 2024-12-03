@@ -26,8 +26,9 @@
 #define PRINT_HIGHLIGHT(text)    std::cout << PINK << text << RESET << "\n"
 #define PRINT_COLOR(color, text) std::cout << color << text << RESET << "\n"
 
-namespace RemusUtils {
+namespace RomulusUtils {
     std::vector<std::string> splitString(const std::string& str, const std::string& delimiter);
+
     void printRawBytes(const char* buffer, size_t size);
     void printMixedBytes(const char* buffer, size_t size);
     void displayRawBytesAsChars(const char* buffer, size_t size);

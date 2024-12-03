@@ -3,7 +3,7 @@
 #include <string>
 #include <map>
 
-namespace RemusDBUtils {
+namespace RomulusDbStructs {
 
     struct InfoBlock {
         std::string key;

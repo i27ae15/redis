@@ -17,18 +17,20 @@
 
 #include <utils.h>
 
-#include <serverConn/initializers.h>
-#include <serverConn/structs.h>
-#include <serverConn/master.h>
-#include <serverConn/slave.h>
+#include <serverConn/manager/initializers.h>
+
+#include <serverConn/connection/master.h>
+#include <serverConn/connection/slave.h>
+#include <serverConn/connection/structs.h>
 
 #include <db/db_manager.h>
+
 #include <protocol/identifier.h>
 
 
 namespace ConnInitializer {
 
-    RemusConnStructs::connConfigs configInitializer(int argc, char** argv) {
+    RomulusConnStructs::connConfigs configInitializer(int argc, char** argv) {
 
         int port = 6379;
         int masterPort {};
@@ -37,7 +39,7 @@ namespace ConnInitializer {
         std::string dirName {}; // This might be a static variable
         std::string fileName {};
         std::string masterHost {};
-        RemusConnStructs::connConfigs configs {};
+        RomulusConnStructs::connConfigs configs {};
 
         std::array<std::string, 4> flagCofig = {"--dir", "--dbfilename", "--port", "--replicaof"};
 
@@ -53,7 +55,7 @@ namespace ConnInitializer {
 
                 if (key == "--replicaof") {
 
-                    std::vector<std::string> mValues = RemusUtils::splitString(input, " ");
+                    std::vector<std::string> mValues = RomulusUtils::splitString(input, " ");
 
                     masterHost = mValues[0];
                     masterPort = std::stoi(mValues[1]);
@@ -69,11 +71,11 @@ namespace ConnInitializer {
 
         // Check if we don't have a master
         if (!masterPort) {
-            configs.conns.emplace_back(RemusConnStructs::connConf{dirName, fileName, host, RemusConn::MASTER, port});
+            configs.conns.emplace_back(RomulusConnStructs::connConf{dirName, fileName, host, RomulusConn::MASTER, port});
             masterPort = port;
             masterHost = host;
         } else {
-            configs.conns.emplace_back(RemusConnStructs::connConf{dirName, fileName, host, RemusConn::SLAVE, port});
+            configs.conns.emplace_back(RomulusConnStructs::connConf{dirName, fileName, host, RomulusConn::SLAVE, port});
         }
 
         configs.masterHost = masterHost;
@@ -82,19 +84,19 @@ namespace ConnInitializer {
         return configs;
     }
 
-    std::vector<RemusConn::ConnectionManager*> initializeConnections(int argc, char **argv) {
+    std::vector<RomulusConn::BaseConnection*> initializeConnections(int argc, char **argv) {
 
-        RemusConnStructs::connConfigs connConfigs = configInitializer(argc, argv);
-        std::vector<RemusConn::ConnectionManager*> conns {};
+        RomulusConnStructs::connConfigs connConfigs = configInitializer(argc, argv);
+        std::vector<RomulusConn::BaseConnection*> conns {};
 
-        for (RemusConnStructs::connConf connConf : connConfigs.conns) {
+        for (RomulusConnStructs::connConf connConf : connConfigs.conns) {
 
-            RemusConn::ConnectionManager* newConn {nullptr};
+            RomulusConn::BaseConnection* newConn {nullptr};
 
-            if (connConf.role == RemusConn::MASTER) {
-                newConn = new RemusConn::Master(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
+            if (connConf.role == RomulusConn::MASTER) {
+                newConn = new RomulusConn::Master(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
             } else {
-                RemusConn::Slave* slaveConn = new RemusConn::Slave(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
+                RomulusConn::Slave* slaveConn = new RomulusConn::Slave(connConf.port, connConf.host, connConf.dirName, connConf.fileName);
                 slaveConn->assignMaster(connConfigs.masterPort, -1, connConfigs.masterHost);
                 slaveConn->handShakeWithMaster();
                 newConn = slaveConn;
@@ -103,7 +105,7 @@ namespace ConnInitializer {
             if (!newConn->getConnectionStatus()) throw std::runtime_error("Connection error");
 
             // We need to create a protocol id and a dbManager
-            newConn->setDbManager(new RemusDB::DbManager(newConn));
+            newConn->setDbManager(new RomulusDB::DbManager(newConn));
             newConn->setProtocolIdr(new ProtocolID::ProtocolIdentifier(newConn));
 
             conns.push_back(newConn);

@@ -1,6 +1,6 @@
 #include <string>
 
-namespace RemusParser {
+namespace RomulusParser {
 
     struct ParseCommand {
         std::string command;

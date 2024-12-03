@@ -1,4 +1,4 @@
-#include <serverConn/conn_manager.h>
+#include <serverConn/manager/manager.h>
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr

@@ -10,7 +10,7 @@
 #include <utils.h>
 
 
-namespace RemusUtils {
+namespace RomulusUtils {
     std::vector<std::string> splitString(const std::string& str, const std::string& delimiter) {
         std::vector<std::string> tokens;
         size_t start = 0;

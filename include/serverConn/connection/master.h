@@ -1,10 +1,10 @@
 #pragma once
-#include <serverConn/server_connection.h>
-#include <serverConn/structs.h>
+#include <serverConn/connection/base.h>
+#include <serverConn/connection/structs.h>
 
-namespace RemusConn {
+namespace RomulusConn {
 
-    class Master : public ConnectionManager {
+    class Master : public BaseConnection {
 
         public:
             Master(
@@ -36,8 +36,8 @@ namespace RemusConn {
             unsigned short nReplicasToACK;
             unsigned short nReplicasOscarKilo;
 
-            RemusConnStructs::replicaConn currentReplicaConn;
-            std::vector<RemusConnStructs::replicaConn> replicaConns;
+            RomulusConnStructs::replicaConn currentReplicaConn;
+            std::vector<RomulusConnStructs::replicaConn> replicaConns;
 
     };
 }
