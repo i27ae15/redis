@@ -13,6 +13,7 @@
 #include <thread>
 #include <condition_variable>
 #include <mutex>
+#include <queue>
 
 #include <serverConn/cache/cache.h>
 #include <utils.h>
@@ -40,6 +41,8 @@ namespace ProtocolID {
     constexpr const char* FULLRESYNC = "FULLRESYNC";
     constexpr const char* WAIT = "WAIT";
     constexpr const char* INCR = "INCR";
+    constexpr const char* MULTI = "MULTI";
+    constexpr const char* EXEC = "EXEC";
 
     constexpr const char* PONG = "PONG";
     constexpr const char* OK = "OK";
@@ -76,6 +79,8 @@ namespace ProtocolID {
 
         private:
 
+        static std::queue<std::vector<std::string>> qCommands;
+        static bool inMultiState;
         static bool pWrite;
         static bool pIsWaiting;
 
@@ -113,5 +118,9 @@ namespace ProtocolID {
         bool actionForFullResync();
         bool actionForWait();
         bool actionForIncr();
+        bool actionForMulti();
+
+        bool actionForExecWithQueue();
+        bool actionForExec(unsigned short commandSize);
     };
 }

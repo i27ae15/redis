@@ -13,6 +13,7 @@ namespace ProtocolTypes {
     constexpr const char* PONG_R = "+PONG\r\n";
     constexpr const char* OK_R = "+OK\r\n";
     constexpr const char* NONE_R = "$-1\r\n";
+    constexpr const char* QUEUE_R = "+QUEUED\r\n";
 
     enum class ResponseType : unsigned short {
         ARRAY,
