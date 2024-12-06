@@ -27,7 +27,9 @@ namespace ProtocolID {
     splittedBuffer {},
     rawBuffer {},
     interruptFlag {},
-    refreshExecute {},
+    isExecute {},
+    isMulti {},
+    executeError {},
     checkMethods {
         {PING, [this]() { return actionForPing(); }},
         {ECHO, [this]() { return actionForEcho(); }},
@@ -106,7 +108,6 @@ namespace ProtocolID {
     ) {
 
         setInProcess(true);
-        bool _execute = execute;
 
         if (!identifyProtocol(rawBuffer, command, commandSize, clearObject, false)) {
             rObject = new ProtocolUtils::ReturnObject(
@@ -114,17 +115,20 @@ namespace ProtocolID {
             );
         }
 
-        if (refreshExecute) {
-            _execute = execute;
-            refreshExecute = false;
-        }
-
-        if (_execute) {
+        if ((execute && !isExecute && qCommands.empty()) || executeError || isMulti) {
             // PRINT_HIGHLIGHT("SENDING BACK: " + rObject->return_value + " | FROM: " + command);
             sendResponse(commandSize, clientFD, rObject);
-            if (!qCommands.empty()) processCommandQueue();
+        }
+        else if (execute && isExecute) {
 
-        } else if (!_execute) {
+            if (qCommands.empty()) {
+                rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::EMPTY_ARRAY);
+                sendResponse(0, clientFD, rObject);
+            } else {
+                processCommandQueue();
+            }
+
+        } else if (!execute) {
             qCommands.push(
                 ProtocolUtils::CommandObj{*(rObject), commandSize, clientFD}
             );
@@ -137,6 +141,9 @@ namespace ProtocolID {
             sendResponse(0, clientFD, rObject);
         }
 
+        isMulti = false;
+        isExecute = false;
+        executeError = false;
         setInProcess(false);
     }
 
@@ -465,6 +472,7 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForMulti() {
 
+        isMulti = true;
         execute = false;
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
 
@@ -476,12 +484,11 @@ namespace ProtocolID {
             rObject = new ProtocolUtils::ReturnObject(
                 ProtocolUtils::constructError("EXEC without MULTI")
             );
-        } else {
-            execute = true;
-            refreshExecute = true;
-            rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
+            executeError = true;
         }
 
+        execute = true;
+        isExecute = true;
 
         return true;
     }

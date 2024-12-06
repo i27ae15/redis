@@ -99,7 +99,9 @@ namespace ProtocolID {
         std::condition_variable cv;
 
         bool inProcess;
-        bool refreshExecute;
+        bool isExecute;
+        bool executeError;
+        bool isMulti;
 
         RomulusConn::BaseConnection* conn;
         ProtocolUtils::ReturnObject* rObject;
