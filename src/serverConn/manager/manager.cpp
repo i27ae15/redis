@@ -22,6 +22,7 @@
 
 #include <utils.h>
 
+
 namespace ConnManager {
     std::mutex qMutex;
     std::queue<RomulusParser::ParseCommand> commandQueue;
