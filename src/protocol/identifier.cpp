@@ -283,10 +283,10 @@ namespace ProtocolID {
         std::optional<std::string> value = conn->getCache()->getValue(key);
 
         if (!value.has_value()) {
-            PRINT_ERROR("KEY: " + key + " HAS NO VALUE");
+            // PRINT_ERROR("KEY: " + key + " HAS NO VALUE");
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
         } else {
-            PRINT_SUCCESS("KEY: " + key + " HAS VALUE");
+            // PRINT_SUCCESS("KEY: " + key + " HAS VALUE");
             std::string response = ProtocolUtils::constructRestBulkString({value.value()});
             rObject = new ProtocolUtils::ReturnObject(response, 0);
         }
