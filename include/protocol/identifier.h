@@ -89,8 +89,6 @@ namespace ProtocolID {
 
         private:
 
-        static std::queue<ProtocolUtils::CommandObj> qCommands;
-        static bool execute;
         static bool pWrite;
         static bool pIsWaiting;
 
@@ -98,11 +96,17 @@ namespace ProtocolID {
         std::mutex mtx;
         std::condition_variable cv;
 
+        // Should qCommands be static?
+        static std::queue<ProtocolUtils::CommandObj> qCommands;
+        std::unordered_map<unsigned short, bool> allowExecutionOnClient;
+        std::unordered_map<unsigned short, bool> multiCalledOnClient;
+
         bool inProcess;
         bool isExecute;
         bool executeError;
         bool isMulti;
 
+        unsigned short currentClient;
         RomulusConn::BaseConnection* conn;
         ProtocolUtils::ReturnObject* rObject;
 

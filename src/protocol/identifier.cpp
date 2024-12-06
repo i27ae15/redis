@@ -19,7 +19,6 @@ namespace ProtocolID {
     std::queue<ProtocolUtils::CommandObj> ProtocolIdentifier::qCommands {};
     bool ProtocolIdentifier::pWrite {};
     bool ProtocolIdentifier::pIsWaiting {};
-    bool ProtocolIdentifier::execute {true};
 
     ProtocolIdentifier::ProtocolIdentifier(RomulusConn::BaseConnection *conn) :
     conn {conn},
@@ -30,6 +29,8 @@ namespace ProtocolID {
     isExecute {},
     isMulti {},
     executeError {},
+    allowExecutionOnClient {},
+    multiCalledOnClient {},
     checkMethods {
         {PING, [this]() { return actionForPing(); }},
         {ECHO, [this]() { return actionForEcho(); }},
@@ -108,18 +109,29 @@ namespace ProtocolID {
     ) {
 
         setInProcess(true);
+        currentClient = clientFD;
 
-        if (!identifyProtocol(rawBuffer, command, commandSize, clearObject, false)) {
-            rObject = new ProtocolUtils::ReturnObject(
-                ProtocolUtils::constructError("PROTOCOL: Could Not Be Identified")
-            );
-        }
+        this->buffer = command;
+        this->rawBuffer = rawBuffer;
+        setSplitedBuffer();
 
-        if ((execute && !isExecute && qCommands.empty()) || executeError || isMulti) {
-            // PRINT_HIGHLIGHT("SENDING BACK: " + rObject->return_value + " | FROM: " + command);
+        if (getIdFromBuffer() == EXEC) actionForExec();
+
+        if (!allowExecutionOnClient.count(clientFD)) allowExecutionOnClient[clientFD] = true;
+        bool& cExecute = allowExecutionOnClient[clientFD];
+
+        if ((cExecute && !isExecute) || executeError || isMulti) {
+            if (!identifyProtocol(rawBuffer, command, commandSize, clearObject, false)) {
+                rObject = new ProtocolUtils::ReturnObject(
+                    ProtocolUtils::constructError("PROTOCOL: Could Not Be Identified")
+                );
+            }
             sendResponse(commandSize, clientFD, rObject);
         }
-        else if (execute && isExecute) {
+        else if (executeError) {
+            sendResponse(0, clientFD, rObject);
+        }
+        else if (cExecute && isExecute) {
 
             if (qCommands.empty()) {
                 rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::EMPTY_ARRAY);
@@ -128,7 +140,8 @@ namespace ProtocolID {
                 processCommandQueue();
             }
 
-        } else if (!execute) {
+        } else if (!cExecute) {
+
             qCommands.push(
                 ProtocolUtils::CommandObj{*(rObject), commandSize, clientFD}
             );
@@ -168,11 +181,6 @@ namespace ProtocolID {
 
         setInProcess(true);
         if (clearObject) cleanResponseObject();
-
-        this->buffer = command;
-        this->rawBuffer = rawBuffer;
-
-        setSplitedBuffer();
 
         // PRINT_HIGHLIGHT(getIdFromBuffer() + " : " + std::to_string(commandSize));
         if (checkMethods.count(getIdFromBuffer())) {
@@ -278,6 +286,7 @@ namespace ProtocolID {
             PRINT_ERROR("KEY: " + key + " HAS NO VALUE");
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
         } else {
+            PRINT_SUCCESS("KEY: " + key + " HAS VALUE");
             std::string response = ProtocolUtils::constructRestBulkString({value.value()});
             rObject = new ProtocolUtils::ReturnObject(response, 0);
         }
@@ -473,21 +482,23 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForMulti() {
 
         isMulti = true;
-        execute = false;
+        allowExecutionOnClient[currentClient] = false;
+        multiCalledOnClient[currentClient] = true;
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
 
         return true;
     }
 
     bool ProtocolIdentifier::actionForExec() {
-        if (execute) {
+        if (!multiCalledOnClient[currentClient]) {
             rObject = new ProtocolUtils::ReturnObject(
                 ProtocolUtils::constructError("EXEC without MULTI")
             );
             executeError = true;
         }
 
-        execute = true;
+        allowExecutionOnClient[currentClient] = true;
+        multiCalledOnClient[currentClient] = false;
         isExecute = true;
 
         return true;
