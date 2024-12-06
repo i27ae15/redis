@@ -16,10 +16,10 @@
 
 namespace ProtocolID {
 
-    std::queue<std::vector<std::string>> ProtocolIdentifier::qCommands {};
+    std::queue<ProtocolUtils::CommandObj> ProtocolIdentifier::qCommands {};
     bool ProtocolIdentifier::pWrite {};
     bool ProtocolIdentifier::pIsWaiting {};
-    bool ProtocolIdentifier::inMultiState {};
+    bool ProtocolIdentifier::execute {true};
 
     ProtocolIdentifier::ProtocolIdentifier(RomulusConn::BaseConnection *conn) :
     conn {conn},
@@ -27,6 +27,7 @@ namespace ProtocolID {
     splittedBuffer {},
     rawBuffer {},
     interruptFlag {},
+    refreshExecute {},
     checkMethods {
         {PING, [this]() { return actionForPing(); }},
         {ECHO, [this]() { return actionForEcho(); }},
@@ -40,7 +41,8 @@ namespace ProtocolID {
         {FULLRESYNC, [this]() { return actionForFullResync(); }},
         {WAIT, [this]() { return actionForWait(); }},
         {INCR, [this]() { return actionForIncr(); }},
-        {MULTI, [this]() { return actionForMulti(); }}
+        {MULTI, [this]() { return actionForMulti(); }},
+        {EXEC, [this]() { return actionForExec(); }},
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {}
@@ -95,11 +97,66 @@ namespace ProtocolID {
         splittedBuffer = RomulusUtils::splitString(buffer, " ");
     }
 
-    bool ProtocolIdentifier::identifyProtocol(
+    void ProtocolIdentifier::processProtocol(
+        unsigned short clientFD,
         const std::string rawBuffer,
         const std::string command,
         const unsigned short commandSize,
         bool clearObject
+    ) {
+
+        setInProcess(true);
+        bool _execute = execute;
+
+        if (!identifyProtocol(rawBuffer, command, commandSize, clearObject, false)) {
+            rObject = new ProtocolUtils::ReturnObject(
+                ProtocolUtils::constructError("PROTOCOL: Could Not Be Identified")
+            );
+        }
+
+        if (refreshExecute) {
+            _execute = execute;
+            refreshExecute = false;
+        }
+
+        if (_execute) {
+            // PRINT_HIGHLIGHT("SENDING BACK: " + rObject->return_value + " | FROM: " + command);
+            sendResponse(commandSize, clientFD, rObject);
+            if (!qCommands.empty()) processCommandQueue();
+
+        } else if (!_execute) {
+            qCommands.push(
+                ProtocolUtils::CommandObj{*(rObject), commandSize, clientFD}
+            );
+            rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::QUEUE_R);
+            sendResponse(0, clientFD, rObject);
+        }
+
+        if (conn->sendDBFile) {
+            processDBFile(clientFD);
+            sendResponse(0, clientFD, rObject);
+        }
+
+        setInProcess(false);
+    }
+
+    void ProtocolIdentifier::processDBFile(unsigned short clientFD) {
+        unsigned short fileLength = conn->getDbFile().size();
+        rObject = new ProtocolUtils::ReturnObject("$" + std::to_string(fileLength) + "\r\n" + conn->getDbFile(), 0);
+        conn->sendDBFile = false;
+
+        RomulusConn::Master* masterConn = static_cast<RomulusConn::Master*>(conn);
+        masterConn->setCurrentReplicaServerFd(clientFD);
+        masterConn->addAndCleanCurrentReplicaConn();
+        masterConn->inHandShakeWithReplica = false;
+    }
+
+    bool ProtocolIdentifier::identifyProtocol(
+        const std::string rawBuffer,
+        const std::string command,
+        const unsigned short commandSize,
+        bool clearObject,
+        bool endProcess
     ) {
 
         setInProcess(true);
@@ -111,25 +168,15 @@ namespace ProtocolID {
         setSplitedBuffer();
 
         // PRINT_HIGHLIGHT(getIdFromBuffer() + " : " + std::to_string(commandSize));
-        bool foundProtocol {};
-
-        if (inMultiState) {
-            foundProtocol = true;
-
-            if (getIdFromBuffer() == EXEC) {
-                actionForExecWithQueue();
-            } else {
-                splittedBuffer.push_back(std::to_string(commandSize));
-                qCommands.push(splittedBuffer);
-
-                rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::QUEUE_R);
+        if (checkMethods.count(getIdFromBuffer())) {
+            if (!checkMethods[getIdFromBuffer()]()) {
+                conn->print("Protocol could not be identified: " + buffer, RED);
+                return false;
             }
-        } else {
-            foundProtocol = actionForExec(commandSize);
         }
 
-        setInProcess(false);
-        return foundProtocol;
+        if (endProcess) setInProcess(false);
+        return true;
     }
 
     bool ProtocolIdentifier::actionForPing() {
@@ -168,8 +215,7 @@ namespace ProtocolID {
             expireTime.first = true;
         }
 
-        Cache::DataManager cache;
-        cache.setValue(key, value, expireTime.first, expireTime.second);
+        conn->getCache()->setValue(key, value, expireTime.first, expireTime.second);
 
         // PRINT_SUCCESS("VALUE SET FOR KEY: " + key + " : " + value);
 
@@ -219,17 +265,15 @@ namespace ProtocolID {
 
         std::string key = splittedBuffer[1];
 
-        Cache::DataManager cache;
-        std::optional<std::string> value = cache.getValue(key);
+        std::optional<std::string> value = conn->getCache()->getValue(key);
 
         if (!value.has_value()) {
             PRINT_ERROR("KEY: " + key + " HAS NO VALUE");
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
-            return false;
+        } else {
+            std::string response = ProtocolUtils::constructRestBulkString({value.value()});
+            rObject = new ProtocolUtils::ReturnObject(response, 0);
         }
-
-        std::string response = ProtocolUtils::constructRestBulkString({value.value()});
-        rObject = new ProtocolUtils::ReturnObject(response, 0);
 
         return true;
     }
@@ -405,15 +449,14 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForIncr() {
 
         std::string key = splittedBuffer[1];
-        Cache::DataManager cache;
 
-        if (!cache.incrementValue(key)) {
+        if (!conn->getCache()->incrementValue(key)) {
             rObject = new ProtocolUtils::ReturnObject(
                 ProtocolUtils::constructError("value is not an integer or out of range")
             );
         } else {
             rObject = new ProtocolUtils::ReturnObject(
-                ProtocolUtils::constructInteger(cache.getValue(key).value())
+                ProtocolUtils::constructInteger(conn->getCache()->getValue(key).value())
             );
         }
 
@@ -422,43 +465,47 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForMulti() {
 
-        inMultiState = true;
+        execute = false;
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
 
         return true;
-
     }
 
-    bool ProtocolIdentifier::actionForExec(unsigned short commandSize) {
-
-        if (checkMethods.count(getIdFromBuffer())) {
-            if (!checkMethods[getIdFromBuffer()]()) {
-                conn->print("Protocol could not be identified: " + buffer, RED);
-                return false;
-            }
-            conn->addBytesProcessed(commandSize);
+    bool ProtocolIdentifier::actionForExec() {
+        if (execute) {
+            rObject = new ProtocolUtils::ReturnObject(
+                ProtocolUtils::constructError("EXEC without MULTI")
+            );
+        } else {
+            execute = true;
+            refreshExecute = true;
+            rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
         }
-        // PRINT_HIGHLIGHT("After calling method: " + std::to_string(conn->getBytesProcessed()));
+
+
         return true;
     }
 
-    bool ProtocolIdentifier::actionForExecWithQueue() {
+    void ProtocolIdentifier::sendResponse(
+        unsigned short commandSize,
+        unsigned short clientFD,
+        ProtocolUtils::ReturnObject* rObj
+    ) {
+        conn->addBytesProcessed(commandSize);
+
+        if (!rObj->sendResponse) return;
+        send(clientFD, rObj->return_value.c_str(), rObj->bytes, rObj->behavior);
+    }
+
+    void ProtocolIdentifier::processCommandQueue() {
 
         while (qCommands.size()) {
 
-            std::vector<std::string>& cCommand = qCommands.front();
-
-            if (checkMethods[cCommand[0]]()) {
-                // Should we return false here?
-                conn->addBytesProcessed(std::stoi(cCommand[cCommand.size() - 1]));
-            } else {
-                conn->print("Protocol could not be identified: " + buffer, RED);
-            }
-            // PRINT_HIGHLIGHT("After calling method: " + std::to_string(conn->getBytesProcessed()));
+            ProtocolUtils::CommandObj& cObj = qCommands.front();
+            sendResponse(cObj.cSize, cObj.clientFD, &cObj.rObject);
             qCommands.pop();
         }
 
-        return true;
     }
 
     void ProtocolIdentifier::interruptWait() {

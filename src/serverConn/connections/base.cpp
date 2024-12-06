@@ -5,9 +5,14 @@
 #include <protocol/identifier.h>
 #include <protocol/utils.h>
 
+#include <serverConn/cache/cache.h>
+
 #include <db/db_manager.h>
 
+
 namespace RomulusConn {
+
+    Cache::DataManager* BaseConnection::cache {};
 
     BaseConnection::BaseConnection(
         unsigned short port,
@@ -40,6 +45,12 @@ namespace RomulusConn {
     }
 
     // GETTERS
+    Cache::DataManager* BaseConnection::getCache() {
+        if (!cache) {
+            cache = new Cache::DataManager();
+        }
+        return cache;
+    }
 
     unsigned short BaseConnection::getServerFD() {return serverFD;}
 

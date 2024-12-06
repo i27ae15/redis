@@ -20,7 +20,8 @@
 #include <regex>
 
 namespace ProtocolUtils {
-    class ReturnObject;
+    struct ReturnObject;
+    struct CommandObj;
 }
 
 namespace RomulusConn {
@@ -61,6 +62,15 @@ namespace ProtocolID {
             const std::string rawBuffer,
             const std::string command,
             const unsigned short commandSize,
+            bool clearObject = true,
+            bool endProcess = true
+        );
+
+        void processProtocol(
+            const unsigned short clientFD,
+            const std::string rawBuffer,
+            const std::string command,
+            const unsigned short commandSize,
             bool clearObject = true
         );
 
@@ -79,8 +89,8 @@ namespace ProtocolID {
 
         private:
 
-        static std::queue<std::vector<std::string>> qCommands;
-        static bool inMultiState;
+        static std::queue<ProtocolUtils::CommandObj> qCommands;
+        static bool execute;
         static bool pWrite;
         static bool pIsWaiting;
 
@@ -89,6 +99,7 @@ namespace ProtocolID {
         std::condition_variable cv;
 
         bool inProcess;
+        bool refreshExecute;
 
         RomulusConn::BaseConnection* conn;
         ProtocolUtils::ReturnObject* rObject;
@@ -119,8 +130,14 @@ namespace ProtocolID {
         bool actionForWait();
         bool actionForIncr();
         bool actionForMulti();
+        bool actionForExec();
 
-        bool actionForExecWithQueue();
-        bool actionForExec(unsigned short commandSize);
+        void processCommandQueue();
+        void processDBFile(unsigned short clientFD);
+        void sendResponse(
+            unsigned short commandSize,
+            unsigned short clientFD,
+            ProtocolUtils::ReturnObject* rObj
+        );
     };
 }

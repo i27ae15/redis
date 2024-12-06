@@ -39,25 +39,7 @@ namespace ConnManager {
             return;
         }
 
-        ProtocolID::ProtocolIdentifier* cIdentifier = conn->getProtocolIdr();
-        cIdentifier->identifyProtocol(rawBuffer, command.command, command.size);
-
-        ProtocolUtils::ReturnObject* rObject = cIdentifier->getRObject();
-        // PRINT_HIGHLIGHT("SENDING BACK: " + rObject->return_value);
-
-        if (rObject->sendResponse) send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
-
-        if (conn->sendDBFile) {
-            unsigned short fileLength = conn->getDbFile().size();
-            rObject = new ProtocolUtils::ReturnObject("$" + std::to_string(fileLength) + "\r\n" + conn->getDbFile(), 0);
-            send(clientFD, rObject->return_value.c_str(), rObject->bytes, rObject->behavior);
-            conn->sendDBFile = false;
-
-            RomulusConn::Master* masterConn = static_cast<RomulusConn::Master*>(conn);
-            masterConn->setCurrentReplicaServerFd(clientFD);
-            masterConn->addAndCleanCurrentReplicaConn();
-            masterConn->inHandShakeWithReplica = false;
-        }
+        conn->getProtocolIdr()->processProtocol(clientFD, rawBuffer, command.command, command.size);
     }
 
     void responseRouter(const char* buffer, size_t size, RomulusConn::BaseConnection* conn, int clientFD) {

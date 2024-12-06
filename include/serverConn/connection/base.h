@@ -16,6 +16,10 @@
 
 #include <utils.h>
 
+namespace Cache {
+    class DataManager;
+}
+
 namespace RomulusDB {
     class DbManager;
 }
@@ -62,6 +66,7 @@ namespace RomulusConn {
         std::string getDirName();
         std::string getFileName();
         std::string getId();
+        static Cache::DataManager* getCache();
 
         void setProtocolIdr(
             ProtocolID::ProtocolIdentifier* protocolIdr,
@@ -87,6 +92,8 @@ namespace RomulusConn {
 
 
         private:
+
+            static Cache::DataManager* cache;
 
             unsigned int bytesProcessed;
 
