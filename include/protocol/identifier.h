@@ -44,6 +44,7 @@ namespace ProtocolID {
     constexpr const char* INCR = "INCR";
     constexpr const char* MULTI = "MULTI";
     constexpr const char* EXEC = "EXEC";
+    constexpr const char* DISCARD = "DISCARD";
 
     constexpr const char* PONG = "PONG";
     constexpr const char* OK = "OK";
@@ -141,8 +142,9 @@ namespace ProtocolID {
         bool actionForIncr();
         bool actionForMulti();
         bool actionForExec();
+        bool actionForDiscard();
 
-        bool processMultiOrExec();
+        bool processSpecialCommands();
 
         void processCommandQueue();
         void processDBFile(unsigned short clientFD);

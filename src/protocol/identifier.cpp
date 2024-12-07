@@ -45,6 +45,7 @@ namespace ProtocolID {
         {INCR, [this]() { return actionForIncr(); }},
         {MULTI, [this]() { return actionForMulti(); }},
         {EXEC, [this]() { return actionForExec(); }},
+        {DISCARD, [this]() { return actionForDiscard(); }},
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {
@@ -131,7 +132,7 @@ namespace ProtocolID {
         setSplitedBuffer();
 
         // Separate MULTI and EXEC
-        if (processMultiOrExec()) return;
+        if (processSpecialCommands()) return;
 
         if (!allowExecutionOnClient.count(clientFD)) allowExecutionOnClient[clientFD] = true;
         bool& cExecute = allowExecutionOnClient[clientFD];
@@ -164,20 +165,23 @@ namespace ProtocolID {
 
     }
 
-    bool ProtocolIdentifier::processMultiOrExec() {
+    bool ProtocolIdentifier::processSpecialCommands() {
 
-        if (getIdFromBuffer() == EXEC || getIdFromBuffer() == MULTI) {
+        bool toReturn {};
 
-            if (getIdFromBuffer() == EXEC) {
-                if (!actionForExec()) return true;
-            }
-            else if (getIdFromBuffer() == MULTI) {
-                actionForMulti();
-                return true;
-            }
+        if (getIdFromBuffer() == EXEC) {
+            toReturn = !(actionForExec());
+
+        } else if (getIdFromBuffer() == MULTI) {
+            actionForMulti();
+            toReturn = true;
+
+        } else if (getIdFromBuffer() == DISCARD) {
+            actionForDiscard();
+            toReturn = true;
         }
 
-        return false;
+        return toReturn;
     }
 
     void ProtocolIdentifier::processDBFile(unsigned short clientFD) {
@@ -432,6 +436,7 @@ namespace ProtocolID {
         rObject = new ProtocolUtils::ReturnObject(response);
         conn->sendDBFile = true;
 
+        // Make this work
         // processDBFile(currentClient);
         // sendResponse(0, currentClient, rObject);
 
@@ -530,6 +535,26 @@ namespace ProtocolID {
 
         multiCalledOnClient[currentClient] = false;
         isExecute = true;
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::actionForDiscard() {
+
+        if (!multiCalledOnClient[currentClient]) {
+            rObject = new ProtocolUtils::ReturnObject(
+                ProtocolUtils::constructError("DISCARD without MULTI")
+            );
+        } else {
+            qCommands = {};
+
+            multiCalledOnClient[currentClient] = false;
+            allowExecutionOnClient[currentClient] = true;
+
+            rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
+        }
+
+        sendResponse(currentCommandSize, currentClient, rObject);
 
         return true;
     }
