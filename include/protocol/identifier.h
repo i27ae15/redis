@@ -103,7 +103,7 @@ namespace ProtocolID {
         std::condition_variable cv;
 
         // Should qCommands be static?
-        static std::queue<ProtocolUtils::CommandObj> qCommands;
+        static std::unordered_map<unsigned short, std::queue<ProtocolUtils::CommandObj>> mCommands;
         std::unordered_map<unsigned short, bool> allowExecutionOnClient;
         std::unordered_map<unsigned short, bool> multiCalledOnClient;
 
@@ -119,6 +119,8 @@ namespace ProtocolID {
         std::string protocol;
         std::string rawBuffer;
         std::vector<std::string> splittedBuffer;
+
+        std::queue<ProtocolUtils::CommandObj>& getCommandQueue();
 
         void setSplitedBuffer();
 

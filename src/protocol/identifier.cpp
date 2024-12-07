@@ -16,7 +16,10 @@
 
 namespace ProtocolID {
 
-    std::queue<ProtocolUtils::CommandObj> ProtocolIdentifier::qCommands {};
+    std::unordered_map<
+        unsigned short,
+        std::queue<ProtocolUtils::CommandObj>
+    > ProtocolIdentifier::mCommands {};
     bool ProtocolIdentifier::pWrite {};
     bool ProtocolIdentifier::pIsWaiting {};
 
@@ -101,6 +104,18 @@ namespace ProtocolID {
         splittedBuffer = RomulusUtils::splitString(buffer, " ");
     }
 
+    // GETTERS
+
+    std::queue<ProtocolUtils::CommandObj>& ProtocolIdentifier::getCommandQueue() {
+
+        if (!mCommands.count(currentClient)) {
+            mCommands[currentClient] = std::queue<ProtocolUtils::CommandObj>();
+        }
+
+        return mCommands[currentClient];
+    }
+
+
     // METHODS
 
     void ProtocolIdentifier::processProtocol(
@@ -156,7 +171,7 @@ namespace ProtocolID {
         }
 
         if (!cExecute) {
-            qCommands.push(
+            getCommandQueue().push(
                 ProtocolUtils::CommandObj{splittedBuffer, commandSize, clientFD}
             );
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::QUEUE_R);
@@ -546,7 +561,7 @@ namespace ProtocolID {
                 ProtocolUtils::constructError("DISCARD without MULTI")
             );
         } else {
-            qCommands = {};
+            getCommandQueue() = {};
 
             multiCalledOnClient[currentClient] = false;
             allowExecutionOnClient[currentClient] = true;
@@ -574,15 +589,15 @@ namespace ProtocolID {
 
         std::vector<std::string> responses {};
 
-        if (qCommands.empty()) {
+        if (getCommandQueue().empty()) {
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::EMPTY_ARRAY);
             sendResponse(0, currentClient, rObject);
             return;
         }
 
-        while (!qCommands.empty()) {
+        while (!getCommandQueue().empty()) {
 
-            ProtocolUtils::CommandObj& cObj = qCommands.front();
+            ProtocolUtils::CommandObj& cObj = getCommandQueue().front();
             splittedBuffer = cObj.splittedBuffer;
             identifyProtocol();
 
@@ -598,7 +613,7 @@ namespace ProtocolID {
 
 
             responses.push_back(rValue);
-            qCommands.pop();
+            getCommandQueue().pop();
         }
 
         rObject = new ProtocolUtils::ReturnObject(
