@@ -45,9 +45,9 @@ namespace ProtocolUtils {
 
     std::string constructError(const std::string msg);
     std::string constructInteger(const std::string integer);
-    std::string constructArray(const std::vector<std::string> args);
     std::string constructBulkString(const std::vector<std::string> args);
-    std::string constructRestBulkString(const std::vector<std::string> args);
     std::string constructSimpleString(const std::vector<std::string> args);
+    std::string constructRestBulkString(const std::vector<std::string> args);
+    std::string constructArray(const std::vector<std::string> args, bool checkFirstByte = false);
     std::string constructProtocol(const std::vector<std::string> args, ProtocolTypes::ResponseType rType);
 }

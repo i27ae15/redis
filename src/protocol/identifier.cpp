@@ -602,10 +602,10 @@ namespace ProtocolID {
         }
 
         rObject = new ProtocolUtils::ReturnObject(
-            ProtocolUtils::constructArray(responses)
+            ProtocolUtils::constructArray(responses, true)
         );
 
-        // PRINT_HIGHLIGHT("HERE: " + rObject->return_value + " | FROM: " + getIdFromBuffer());
+        PRINT_HIGHLIGHT("HERE: " + rObject->return_value + " | FROM: " + getIdFromBuffer());
         sendResponse(rObject->bytes, currentClient, rObject);
 
     }
