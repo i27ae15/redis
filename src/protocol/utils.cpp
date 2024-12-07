@@ -73,7 +73,18 @@ namespace ProtocolUtils {
 
         std::string response = '*' + std::to_string(args.size()) + "\r\n";
 
-        response += constructRestBulkString(args);
+        for (std::string arg : args) {
+            if (arg[0] == ':') {
+                response += arg;
+            } else {
+                response += constructRestBulkString({arg});
+            }
+        }
+
+        // if (response.size() < 2 || response.substr(response.size() - 2) != "\r\n") {
+        //     response += "\r\n";
+        // }
+
 
         return response;
     }

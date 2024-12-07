@@ -27,10 +27,9 @@ namespace ProtocolID {
     rawBuffer {},
     interruptFlag {},
     isExecute {},
-    isMulti {},
-    executeError {},
     allowExecutionOnClient {},
     multiCalledOnClient {},
+    currentCommandSize {},
     checkMethods {
         {PING, [this]() { return actionForPing(); }},
         {ECHO, [this]() { return actionForEcho(); }},
@@ -48,7 +47,8 @@ namespace ProtocolID {
         {EXEC, [this]() { return actionForExec(); }},
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
-    {}
+    {
+    }
 
     ProtocolIdentifier::~ProtocolIdentifier() {
         delete rObject;
@@ -100,6 +100,8 @@ namespace ProtocolID {
         splittedBuffer = RomulusUtils::splitString(buffer, " ");
     }
 
+    // METHODS
+
     void ProtocolIdentifier::processProtocol(
         unsigned short clientFD,
         const std::string rawBuffer,
@@ -109,55 +111,73 @@ namespace ProtocolID {
     ) {
 
         setInProcess(true);
+        _processProtocol(clientFD, rawBuffer, command, commandSize, clearObject);
+        setInProcess(false);
+    }
+
+    void ProtocolIdentifier::_processProtocol(
+        unsigned short clientFD,
+        const std::string rawBuffer,
+        const std::string command,
+        const unsigned short commandSize,
+        bool clearObject
+    ) {
+
         currentClient = clientFD;
 
         this->buffer = command;
         this->rawBuffer = rawBuffer;
+        this->currentCommandSize = commandSize;
         setSplitedBuffer();
 
-        if (getIdFromBuffer() == EXEC) actionForExec();
+        // Separate MULTI and EXEC
+        if (processMultiOrExec()) return;
 
         if (!allowExecutionOnClient.count(clientFD)) allowExecutionOnClient[clientFD] = true;
         bool& cExecute = allowExecutionOnClient[clientFD];
 
-        if ((cExecute && !isExecute) || executeError || isMulti) {
-            if (!identifyProtocol(rawBuffer, command, commandSize, clearObject, false)) {
-                rObject = new ProtocolUtils::ReturnObject(
-                    ProtocolUtils::constructError("PROTOCOL: Could Not Be Identified")
-                );
-            }
+        if (cExecute && !isExecute) {
+            identifyProtocol(clearObject);
             sendResponse(commandSize, clientFD, rObject);
-        }
-        else if (executeError) {
-            sendResponse(0, clientFD, rObject);
-        }
-        else if (cExecute && isExecute) {
 
-            if (qCommands.empty()) {
-                rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::EMPTY_ARRAY);
+            if (conn->sendDBFile) {
+                processDBFile(clientFD);
                 sendResponse(0, clientFD, rObject);
-            } else {
-                processCommandQueue();
             }
 
-        } else if (!cExecute) {
+            return;
+        }
 
+        if (cExecute) {
+            isExecute = false;
+            processCommandQueue();
+            return;
+        }
+
+        if (!cExecute) {
             qCommands.push(
-                ProtocolUtils::CommandObj{*(rObject), commandSize, clientFD}
+                ProtocolUtils::CommandObj{splittedBuffer, commandSize, clientFD}
             );
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::QUEUE_R);
             sendResponse(0, clientFD, rObject);
         }
 
-        if (conn->sendDBFile) {
-            processDBFile(clientFD);
-            sendResponse(0, clientFD, rObject);
+    }
+
+    bool ProtocolIdentifier::processMultiOrExec() {
+
+        if (getIdFromBuffer() == EXEC || getIdFromBuffer() == MULTI) {
+
+            if (getIdFromBuffer() == EXEC) {
+                if (!actionForExec()) return true;
+            }
+            else if (getIdFromBuffer() == MULTI) {
+                actionForMulti();
+                return true;
+            }
         }
 
-        isMulti = false;
-        isExecute = false;
-        executeError = false;
-        setInProcess(false);
+        return false;
     }
 
     void ProtocolIdentifier::processDBFile(unsigned short clientFD) {
@@ -171,26 +191,22 @@ namespace ProtocolID {
         masterConn->inHandShakeWithReplica = false;
     }
 
-    bool ProtocolIdentifier::identifyProtocol(
-        const std::string rawBuffer,
-        const std::string command,
-        const unsigned short commandSize,
-        bool clearObject,
-        bool endProcess
-    ) {
-
-        setInProcess(true);
+    bool ProtocolIdentifier::identifyProtocol(bool clearObject) {
         if (clearObject) cleanResponseObject();
 
         // PRINT_HIGHLIGHT(getIdFromBuffer() + " : " + std::to_string(commandSize));
         if (checkMethods.count(getIdFromBuffer())) {
             if (!checkMethods[getIdFromBuffer()]()) {
+
+                rObject = new ProtocolUtils::ReturnObject(
+                    ProtocolUtils::constructError("PROTOCOL: Could Not Be Identified")
+                );
                 conn->print("Protocol could not be identified: " + buffer, RED);
+
                 return false;
             }
         }
 
-        if (endProcess) setInProcess(false);
         return true;
     }
 
@@ -230,7 +246,7 @@ namespace ProtocolID {
             expireTime.first = true;
         }
 
-        conn->getCache()->setValue(key, value, expireTime.first, expireTime.second);
+        conn->getCache()->saveValue(key, value, expireTime.first, expireTime.second);
 
         // PRINT_SUCCESS("VALUE SET FOR KEY: " + key + " : " + value);
 
@@ -286,9 +302,17 @@ namespace ProtocolID {
             // PRINT_ERROR("KEY: " + key + " HAS NO VALUE");
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
         } else {
-            // PRINT_SUCCESS("KEY: " + key + " HAS VALUE");
-            std::string response = ProtocolUtils::constructRestBulkString({value.value()});
+            std::string response {};
+            response = ProtocolUtils::constructSimpleString({value.value()});
             rObject = new ProtocolUtils::ReturnObject(response, 0);
+            return true;
+            // PRINT_SUCCESS("KEY: " + key + " HAS VALUE");
+            // if (RomulusUtils::canConvertToInt(value.value())) {
+            //     response = ProtocolUtils::constructInteger(value.value());
+            // } else {
+            //     response = ProtocolUtils::constructRestBulkString({value.value()});
+            // }
+            // rObject = new ProtocolUtils::ReturnObject(response, 0);
         }
 
         return true;
@@ -408,6 +432,9 @@ namespace ProtocolID {
         rObject = new ProtocolUtils::ReturnObject(response);
         conn->sendDBFile = true;
 
+        // processDBFile(currentClient);
+        // sendResponse(0, currentClient, rObject);
+
         return true;
     }
 
@@ -481,23 +508,26 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForMulti() {
 
-        isMulti = true;
         allowExecutionOnClient[currentClient] = false;
         multiCalledOnClient[currentClient] = true;
         rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::OK_R);
+        sendResponse(currentCommandSize, currentClient, rObject);
 
         return true;
     }
 
     bool ProtocolIdentifier::actionForExec() {
+        allowExecutionOnClient[currentClient] = true;
+
         if (!multiCalledOnClient[currentClient]) {
             rObject = new ProtocolUtils::ReturnObject(
                 ProtocolUtils::constructError("EXEC without MULTI")
             );
-            executeError = true;
+            sendResponse(currentCommandSize, currentClient, rObject);
+
+            return false;
         }
 
-        allowExecutionOnClient[currentClient] = true;
         multiCalledOnClient[currentClient] = false;
         isExecute = true;
 
@@ -517,12 +547,41 @@ namespace ProtocolID {
 
     void ProtocolIdentifier::processCommandQueue() {
 
-        while (qCommands.size()) {
+        std::vector<std::string> responses {};
+
+        if (qCommands.empty()) {
+            rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::EMPTY_ARRAY);
+            sendResponse(0, currentClient, rObject);
+            return;
+        }
+
+        while (!qCommands.empty()) {
 
             ProtocolUtils::CommandObj& cObj = qCommands.front();
-            sendResponse(cObj.cSize, cObj.clientFD, &cObj.rObject);
+            splittedBuffer = cObj.splittedBuffer;
+            identifyProtocol();
+
+            std::string& rValue = rObject->return_value;
+            if (!rValue.empty() && (rValue[0] == '+' || rValue[0] == '$')) {
+                rValue = rValue.substr(1); // Remove the first character
+
+                // Step 2: Remove trailing '\r\n'
+                if (rValue.size() >= 2 && rValue.substr(rValue.size() - 2) == "\r\n") {
+                    rValue = rValue.substr(0, rValue.size() - 2); // Remove the last two characters
+                }
+            }
+
+
+            responses.push_back(rValue);
             qCommands.pop();
         }
+
+        rObject = new ProtocolUtils::ReturnObject(
+            ProtocolUtils::constructArray(responses)
+        );
+
+        // PRINT_HIGHLIGHT("HERE: " + rObject->return_value + " | FROM: " + getIdFromBuffer());
+        sendResponse(rObject->bytes, currentClient, rObject);
 
     }
 

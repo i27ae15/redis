@@ -38,7 +38,7 @@ namespace ProtocolUtils {
     };
 
     struct CommandObj {
-        ReturnObject rObject;
+        std::vector<std::string> splittedBuffer;
         unsigned short cSize;
         unsigned short clientFD;
     };

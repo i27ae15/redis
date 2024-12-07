@@ -32,4 +32,6 @@ namespace RomulusUtils {
     void printRawBytes(const char* buffer, size_t size);
     void printMixedBytes(const char* buffer, size_t size);
     void displayRawBytesAsChars(const char* buffer, size_t size);
+
+    bool canConvertToInt(const std::string& str);
 }

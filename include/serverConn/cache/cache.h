@@ -7,6 +7,9 @@
 
 namespace Cache {
 
+    constexpr unsigned short STR_CACHE = 0;
+    constexpr unsigned short INT_CACHE = 1;
+
     struct strCacheValue {
         std::string value;
         std::optional<std::chrono::time_point<std::chrono::system_clock>> expiredDate;
@@ -24,11 +27,33 @@ namespace Cache {
         DataManager();
         ~DataManager();
 
-        void setValue(
+        void saveValue(
             std::string key,
             std::string value,
             bool expires,
             size_t expiresIn = 0
+        );
+
+        void saveValueAsStr(
+            std::string key,
+            std::string value,
+            bool expires,
+            size_t expiresIn = 0
+        );
+
+        void saveValueAsInt(
+            std::string key,
+            std::string value,
+            bool expires,
+            size_t expiresIn = 0
+        );
+
+        void setValue(
+            std::string key,
+            std::string value,
+            bool expires,
+            size_t expiresIn = 0,
+            unsigned short cacheToUse = STR_CACHE
         );
 
         bool incrementValue(std::string key);

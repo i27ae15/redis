@@ -70,4 +70,11 @@ namespace RomulusUtils {
         std::cout << std::dec << std::endl; // Reset stream to decimal format
     }
 
+    bool canConvertToInt(const std::string& str) {
+        std::istringstream iss(str);
+        int num;
+        // Try to read an integer and ensure no leftover characters
+        return (iss >> num) && (iss.eof());
+    }
+
 }

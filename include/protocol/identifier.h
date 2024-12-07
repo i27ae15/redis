@@ -58,21 +58,6 @@ namespace ProtocolID {
 
         ProtocolUtils::ReturnObject* getRObject();
         std::string getProtocol();
-        bool identifyProtocol(
-            const std::string rawBuffer,
-            const std::string command,
-            const unsigned short commandSize,
-            bool clearObject = true,
-            bool endProcess = true
-        );
-
-        void processProtocol(
-            const unsigned short clientFD,
-            const std::string rawBuffer,
-            const std::string command,
-            const unsigned short commandSize,
-            bool clearObject = true
-        );
 
         void cleanResponseObject();
 
@@ -87,7 +72,27 @@ namespace ProtocolID {
 
         static bool getProIsWaiting();
 
+        void processProtocol(
+            unsigned short clientFD,
+            const std::string rawBuffer,
+            const std::string command,
+            const unsigned short commandSize,
+            bool clearObject = true
+        );
+
+        // PRIVATE
+
         private:
+
+        bool identifyProtocol(bool clearObject = true);
+
+        void _processProtocol(
+            const unsigned short clientFD,
+            const std::string rawBuffer,
+            const std::string command,
+            const unsigned short commandSize,
+            bool clearObject = true
+        );
 
         static bool pWrite;
         static bool pIsWaiting;
@@ -103,10 +108,9 @@ namespace ProtocolID {
 
         bool inProcess;
         bool isExecute;
-        bool executeError;
-        bool isMulti;
 
         unsigned short currentClient;
+        unsigned short currentCommandSize;
         RomulusConn::BaseConnection* conn;
         ProtocolUtils::ReturnObject* rObject;
 
@@ -137,6 +141,8 @@ namespace ProtocolID {
         bool actionForIncr();
         bool actionForMulti();
         bool actionForExec();
+
+        bool processMultiOrExec();
 
         void processCommandQueue();
         void processDBFile(unsigned short clientFD);

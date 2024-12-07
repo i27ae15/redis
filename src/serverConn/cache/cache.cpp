@@ -1,5 +1,6 @@
 #include <sstream>
 
+#include <utils.h>
 #include <serverConn/cache/cache.h>
 
 namespace Cache {
@@ -21,7 +22,7 @@ namespace Cache {
         if (strCache.count(key)) return false;
 
         if (!intCache.count(key)) {
-            setValue(key, "1", false);
+            saveValueAsInt(key, "1", false);
         } else {
             intCache[key].value++;
         }
@@ -29,11 +30,41 @@ namespace Cache {
         return true;
     }
 
-    void DataManager::setValue(
+    void DataManager::saveValue(
         std::string key,
         std::string value,
         bool expires,
         size_t expiresIn
+    ) {
+
+        if (canConvertToInt(value)) return saveValueAsInt(key, value, expires, expiresIn);
+        saveValueAsStr(key, value, expires, expiresIn);
+    }
+
+    void DataManager::saveValueAsInt(
+        std::string key,
+        std::string value,
+        bool expires,
+        size_t expiresIn
+    ) {
+        setValue(key, value, expires, expiresIn, INT_CACHE);
+    }
+
+    void DataManager::saveValueAsStr(
+        std::string key,
+        std::string value,
+        bool expires,
+        size_t expiresIn
+    ) {
+        setValue(key, value, expires, expiresIn, STR_CACHE);
+    }
+
+    void DataManager::setValue(
+        std::string key,
+        std::string value,
+        bool expires,
+        size_t expiresIn,
+        unsigned short cacheToUse
     ) {
 
         std::optional<std::chrono::time_point<std::chrono::system_clock>> expireDate {};
@@ -43,13 +74,17 @@ namespace Cache {
             expireDate = now + std::chrono::milliseconds(expiresIn);
         }
 
-        // Check value type
+        switch (cacheToUse) {
+            case INT_CACHE:
+                intCache[key] = {std::stoi(value), expireDate};
+                break;
 
-        if (canConvertToInt(value)) {
-            intCache[key] = {std::stoi(value), expireDate};
-        }
-        else {
-            strCache[key] = {value, expireDate};
+            case STR_CACHE:
+                strCache[key] = {value, expireDate};
+                break;
+
+            default:
+                break;
         }
     }
 

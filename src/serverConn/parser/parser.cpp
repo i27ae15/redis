@@ -32,6 +32,7 @@ namespace RomulusParser {
             rValue = static_cast<unsigned char>(std::stoi(nVar));
         } catch (const std::invalid_argument) {
             PRINT_ERROR("STOI: " + nVar);
+            RomulusUtils::printMixedBytes(buffer, 1024);
             throw;
         }
 
