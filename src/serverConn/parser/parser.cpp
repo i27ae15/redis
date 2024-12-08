@@ -15,6 +15,10 @@
 
 namespace RomulusParser {
 
+    bool ParseCommand::isEmpty() {
+        return (command.size() == 0 && size == 0);
+    }
+
     unsigned char getVarChars(unsigned short& index, const char* buffer) {
 
         std::string nVar {};

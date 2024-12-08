@@ -50,6 +50,7 @@ namespace ConnManager {
 
             unsigned char byte = static_cast<unsigned char>(buffer[i]);
 
+            // TODO: Add possible to listen on $
             if (byte == ProtocolTypes::ARRAY) {
                 command = RomulusParser::parserArray(++i, buffer);
             }
@@ -59,7 +60,9 @@ namespace ConnManager {
                 continue;
             }
 
-            // TODO: Add possible to listen on $
+            // PRINT_HIGHLIGHT("COMMAND: " + command.command);
+            if (command.isEmpty()) return;
+
             std::lock_guard<std::mutex> lock(qMutex);
             commandQueue.push(command);
         }

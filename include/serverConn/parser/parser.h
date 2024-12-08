@@ -5,6 +5,8 @@ namespace RomulusParser {
     struct ParseCommand {
         std::string command;
         unsigned short size;
+
+        bool isEmpty();
     };
 
     unsigned char getVarChars(unsigned short& index, const char* buffer);

@@ -321,13 +321,6 @@ namespace ProtocolID {
             std::string response {};
             response = ProtocolUtils::constructSimpleString({value.value()});
             rObject = new ProtocolUtils::ReturnObject(response, 0);
-
-            // if (RomulusUtils::canConvertToInt(value.value())) {
-            //     response = ProtocolUtils::constructInteger(value.value());
-            // } else {
-            //     response = ProtocolUtils::constructRestBulkString({value.value()});
-            // }
-            // rObject = new ProtocolUtils::ReturnObject(response, 0);
         }
 
         return true;

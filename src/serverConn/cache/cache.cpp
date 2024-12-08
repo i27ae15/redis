@@ -86,6 +86,8 @@ namespace Cache {
             default:
                 break;
         }
+
+        // PRINT_HIGHLIGHT("VALUE SET FOR: " + key);
     }
 
     bool DataManager::hasExpired(
