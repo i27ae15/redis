@@ -3,10 +3,10 @@
 
 namespace ProtocolUtils {
 
-    ReturnObject::ReturnObject(std::string return_value, char behavior, bool sendResponse) {
-        this->return_value = return_value;
+    ReturnObject::ReturnObject(std::string rValue, unsigned short behavior, bool sendResponse) {
+        this->rValue = rValue;
         this->behavior = behavior;
-        this->bytes = return_value.size();
+        this->bytes = rValue.size();
         this->sendResponse = sendResponse;
     }
 
@@ -23,6 +23,8 @@ namespace ProtocolUtils {
         if (rType == ProtocolTypes::ResponseType::ERROR) return constructError(args[0]);
 
         PRINT_ERROR("ERROR CONSTRUCTING PROTOCOL - NO VALID PROTOCOL PASSED: " + std::to_string(ProtocolTypes::BSTRING));
+        throw std::runtime_error("ILLO, PERO QUE PROTOCOL QUERES???? HIJO DE PUTA");
+
         return "";
     }
 
@@ -44,7 +46,6 @@ namespace ProtocolUtils {
 
         return '$' + std::to_string(response.size() - 1) + "\r\n" + response + "\n";
     }
-
 
     std::string constructRestBulkString(const std::vector<std::string> args) {
 
@@ -80,11 +81,6 @@ namespace ProtocolUtils {
                 response += constructRestBulkString({arg});
             }
         }
-
-        // if (response.size() < 2 || response.substr(response.size() - 2) != "\r\n") {
-        //     response += "\r\n";
-        // }
-
 
         return response;
     }

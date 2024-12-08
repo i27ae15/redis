@@ -582,7 +582,7 @@ namespace ProtocolID {
         conn->addBytesProcessed(commandSize);
 
         if (!rObj->sendResponse) return;
-        send(clientFD, rObj->return_value.c_str(), rObj->bytes, rObj->behavior);
+        send(clientFD, rObj->rValue.c_str(), rObj->bytes, rObj->behavior);
     }
 
     void ProtocolIdentifier::processCommandQueue() {
@@ -601,7 +601,7 @@ namespace ProtocolID {
             splittedBuffer = cObj.splittedBuffer;
             identifyProtocol();
 
-            std::string& rValue = rObject->return_value;
+            std::string& rValue = rObject->rValue;
             if (!rValue.empty() && (rValue[0] == '+' || rValue[0] == '$')) {
                 rValue = rValue.substr(1); // Remove the first character
 
@@ -620,7 +620,7 @@ namespace ProtocolID {
             ProtocolUtils::constructArray(responses, true)
         );
 
-        PRINT_HIGHLIGHT("HERE: " + rObject->return_value + " | FROM: " + getIdFromBuffer());
+        // PRINT_HIGHLIGHT("HERE: " + rObject->rValue + " | FROM: " + getIdFromBuffer());
         sendResponse(rObject->bytes, currentClient, rObject);
 
     }
