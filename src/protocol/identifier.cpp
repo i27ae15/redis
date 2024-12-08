@@ -60,20 +60,24 @@ namespace ProtocolID {
 
     // GETTERS
 
+    bool ProtocolIdentifier::getInProcess() {
+        return inProcess;
+    }
+
+    bool ProtocolIdentifier::getProIsWaiting() {
+        return pIsWaiting;
+    }
+
+    void ProtocolIdentifier::cleanResponseObject() {
+        rObject = new ProtocolUtils::ReturnObject("+\r\n", 0, false);
+    }
+
     ProtocolUtils::ReturnObject* ProtocolIdentifier::getRObject() {
         return rObject;
     }
 
     std::string ProtocolIdentifier::getProtocol() {
         return protocol;
-    }
-
-    bool ProtocolIdentifier::getInProcess() {
-        return inProcess;
-    }
-
-    void ProtocolIdentifier::cleanResponseObject() {
-        rObject = new ProtocolUtils::ReturnObject("+\r\n", 0, false);
     }
 
     std::string ProtocolIdentifier::getIdFromBuffer() {
@@ -85,8 +89,13 @@ namespace ProtocolID {
         return splittedBuffer[0];
     }
 
-    bool ProtocolIdentifier::getProIsWaiting() {
-        return pIsWaiting;
+    std::queue<ProtocolUtils::CommandObj>& ProtocolIdentifier::getCommandQueue() {
+
+        if (!mCommands.count(currentClient)) {
+            mCommands[currentClient] = std::queue<ProtocolUtils::CommandObj>();
+        }
+
+        return mCommands[currentClient];
     }
 
     // Setters
@@ -102,17 +111,6 @@ namespace ProtocolID {
 
     void ProtocolIdentifier::setSplitedBuffer() {
         splittedBuffer = RomulusUtils::splitString(buffer, " ");
-    }
-
-    // GETTERS
-
-    std::queue<ProtocolUtils::CommandObj>& ProtocolIdentifier::getCommandQueue() {
-
-        if (!mCommands.count(currentClient)) {
-            mCommands[currentClient] = std::queue<ProtocolUtils::CommandObj>();
-        }
-
-        return mCommands[currentClient];
     }
 
 
@@ -318,14 +316,12 @@ namespace ProtocolID {
         std::optional<std::string> value = conn->getCache()->getValue(key);
 
         if (!value.has_value()) {
-            // PRINT_ERROR("KEY: " + key + " HAS NO VALUE");
             rObject = new ProtocolUtils::ReturnObject(ProtocolTypes::NONE_R);
         } else {
             std::string response {};
             response = ProtocolUtils::constructSimpleString({value.value()});
             rObject = new ProtocolUtils::ReturnObject(response, 0);
-            return true;
-            // PRINT_SUCCESS("KEY: " + key + " HAS VALUE");
+
             // if (RomulusUtils::canConvertToInt(value.value())) {
             //     response = ProtocolUtils::constructInteger(value.value());
             // } else {
