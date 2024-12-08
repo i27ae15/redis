@@ -34,7 +34,6 @@ namespace RomulusConn {
         connectionStatus {true},
         id {"8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb"}
     {
-
         createSocket();
         checkAddress();
         checkConnection();
@@ -44,7 +43,9 @@ namespace RomulusConn {
         close(serverFD);
     }
 
-    // GETTERS
+    /* --------------------------------------------------------- */
+    /*                      GETTERS                              */
+    /* --------------------------------------------------------- */
     Cache::DataManager* BaseConnection::getCache() {
         if (!cache) {
             cache = new Cache::DataManager();
@@ -55,6 +56,8 @@ namespace RomulusConn {
     unsigned short BaseConnection::getServerFD() {return serverFD;}
 
     unsigned short BaseConnection::getPort() {return port;}
+
+    unsigned int BaseConnection::getBytesProcessed() {return bytesProcessed;}
 
     bool BaseConnection::getConnectionStatus() {return connectionStatus;}
 
@@ -67,38 +70,6 @@ namespace RomulusConn {
     std::string BaseConnection::getId() {return id;}
 
     std::string BaseConnection::getDbFile() {return dbManager->getDbFile();}
-
-    unsigned int BaseConnection::getBytesProcessed() {return bytesProcessed;}
-
-    // SETTERS
-
-    void BaseConnection::addBytesProcessed(unsigned short bytes) {
-        // PRINT_HIGHLIGHT("ADDING BYTES " + std::to_string(bytes.size()));
-        if (listenToBytes) bytesProcessed += bytes;
-    }
-
-    void BaseConnection::startProcessingBytes() {
-        listenToBytes = true;
-    }
-
-    void BaseConnection::print(std::string msg, std::string color) {
-        if (getRole() == RomulusConn::SLAVE) {
-            msg = "REPLICA SAYS: " + msg;
-            PRINT_COLOR(color, msg);
-
-        } else if (getRole() == RomulusConn::MASTER) {
-            msg = "MASTER SAYS: " + msg;
-            PRINT_COLOR(color, msg);
-        }
-    }
-
-    void BaseConnection::print(std::string msg) {
-        if (getRole() == RomulusConn::SLAVE) {
-            print(msg, BLUE);
-        } else if (getRole() == RomulusConn::MASTER) {
-            print(msg, WHITE);
-        }
-    }
 
     ProtocolID::ProtocolIdentifier* BaseConnection::getProtocolIdr() {
 
@@ -121,18 +92,29 @@ namespace RomulusConn {
         return dbManager;
     }
 
-    // Setters
+    /* --------------------------------------------------------- */
+    /*                      SETTERS                              */
+    /* --------------------------------------------------------- */
+
+    void BaseConnection::addBytesProcessed(unsigned short bytes) {
+        // PRINT_HIGHLIGHT("ADDING BYTES " + std::to_string(bytes.size()));
+        if (listenToBytes) bytesProcessed += bytes;
+    }
+
+    void BaseConnection::startProcessingBytes() {
+        listenToBytes = true;
+    }
 
     void BaseConnection::setProtocolIdr(
-        ProtocolID::ProtocolIdentifier* protocolIdr, bool overWrite
+        ProtocolID::ProtocolIdentifier* protocolIdr, bool override
     ) {
 
         protocols.push_back(protocolIdr);
         if (this->protocolIdr == nullptr) this->protocolIdr = protocolIdr; return;
 
-        if (!overWrite) {
+        if (!override) {
             PRINT_ERROR("There is already a ProtocolID::ProtocolIndetifier linked to this object!");
-            PRINT_ERROR("If you want to overwrite it, set overWrite to true");
+            PRINT_ERROR("If you want to override it, set override to true");
             return;
         }
 
@@ -141,13 +123,13 @@ namespace RomulusConn {
     }
 
     void BaseConnection::setDbManager(
-        RomulusDB::DbManager* dbManager, bool overWrite
+        RomulusDB::DbManager* dbManager, bool override
     ) {
         if (this->dbManager == nullptr) this->dbManager = dbManager; return;
 
-        if (!overWrite) {
+        if (!override) {
             PRINT_ERROR("There is already a RomulusDB::DbManager linked to this object!");
-            PRINT_ERROR("If you want to overwrite it, set overWrite to true");
+            PRINT_ERROR("If you want to override it, set override to true");
             return;
         }
 
@@ -156,7 +138,9 @@ namespace RomulusConn {
         this->dbManager = dbManager;
     }
 
-    // METHODS
+    /* --------------------------------------------------------- */
+    /*                       OTHER                               */
+    /* --------------------------------------------------------- */
 
     void BaseConnection::createSocket() {
         int serverFD = socket(AF_INET, SOCK_STREAM, 0);
@@ -190,7 +174,6 @@ namespace RomulusConn {
             PRINT_ERROR("Failed to bind to port " + std::to_string(getPort()) + " | serverFD: " + std::to_string(serverFD));
             return;
         }
-
     }
 
     void BaseConnection::checkConnection() {
@@ -201,5 +184,23 @@ namespace RomulusConn {
         }
     }
 
+    void BaseConnection::print(std::string msg, std::string color) {
+        if (getRole() == RomulusConn::SLAVE) {
+            msg = "REPLICA SAYS: " + msg;
+            PRINT_COLOR(color, msg);
+
+        } else if (getRole() == RomulusConn::MASTER) {
+            msg = "MASTER SAYS: " + msg;
+            PRINT_COLOR(color, msg);
+        }
+    }
+
+    void BaseConnection::print(std::string msg) {
+        if (getRole() == RomulusConn::SLAVE) {
+            print(msg, BLUE);
+        } else if (getRole() == RomulusConn::MASTER) {
+            print(msg, WHITE);
+        }
+    }
 }
 
