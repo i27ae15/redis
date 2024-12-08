@@ -60,11 +60,11 @@ namespace ConnManager {
                 continue;
             }
 
-            // PRINT_HIGHLIGHT("COMMAND: " + command.command);
             if (command.isEmpty()) return;
 
             std::lock_guard<std::mutex> lock(qMutex);
             commandQueue.push(command);
+            command = {};
         }
 
         // Launch a thread to process the queue
