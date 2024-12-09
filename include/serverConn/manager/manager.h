@@ -19,5 +19,4 @@ namespace ConnManager {
         int clientFD
     );
 
-    bool replicaHandShake(RomulusConn::BaseConnection* conn, std::string buffer, int clientFD);
 }

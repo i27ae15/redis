@@ -13,12 +13,12 @@ namespace RomulusConn {
         std::string dirName,
         std::string fileName
     ) :
-    BaseConnection(port, host, dirName, fileName),
-    inHandShakeWithReplica {},
-    currentReplicaConn {},
-    replicaConns {},
-    nReplicasToACK {},
-    nReplicasOscarKilo {}
+        BaseConnection(port, host, dirName, fileName),
+        inHandShakeWithReplica {},
+        currentReplicaConn {},
+        replicaConns {},
+        nReplicasToACK {},
+        nReplicasOscarKilo {}
     {
         if (getConnectionStatus()) PRINT_SUCCESS("Connection Stablished at port: " + std::to_string(port) + " As " +  getRole());
     }
@@ -50,7 +50,6 @@ namespace RomulusConn {
     void Master::setReplicasOscarKilo(unsigned short n) {
         nReplicasOscarKilo = n;
     }
-
 
     void Master::createCurrentReplicaConn() {
         currentReplicaConn = RomulusConnStructs::replicaConn();

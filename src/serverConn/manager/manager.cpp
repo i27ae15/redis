@@ -39,6 +39,7 @@ namespace ConnManager {
             return;
         }
 
+        // PRINT_HIGHLIGHT("CLIENT_FD: " + std::to_string(clientFD) + " | COMMAND: " + command.command);
         conn->getProtocolIdr()->processProtocol(clientFD, rawBuffer, command.command, command.size);
     }
 
@@ -51,12 +52,16 @@ namespace ConnManager {
             unsigned char byte = static_cast<unsigned char>(buffer[i]);
 
             // TODO: Add possible to listen on $
+            // I think the error is happening due to the RDB file
+            // being sent in a differente buffer and it is not being parsed accordingly
+            // because we don't have a parser on bulk_strings
             if (byte == ProtocolTypes::ARRAY) {
                 command = RomulusParser::parserArray(++i, buffer);
             }
-            else if (byte == ProtocolTypes::SSTRING) {
+            else if (byte == ProtocolTypes::SSTRING || byte == ProtocolTypes::BSTRING) {
                 command = RomulusParser::parserString(++i, buffer, size);
-            } else {
+            }
+            else {
                 continue;
             }
 

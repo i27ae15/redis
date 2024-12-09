@@ -1,47 +1,114 @@
 #pragma once
 #include <serverConn/connection/base.h>
 
+/**
+ * @namespace RomulusConn
+ * @brief Contains classes and utilities for managing Master and Slave connections in the Romulus system.
+ */
 namespace RomulusConn {
 
-    class Master;
+    class Master; ///< Forward declaration of the Master class.
 
+    /**
+     * @class Slave
+     * @brief Represents a Slave node in the Romulus system, which connects to a Master node for replication.
+     *
+     * The Slave class extends the BaseConnection class and includes functionality for interacting with
+     * a Master node, performing handshakes, and managing replication connections.
+     */
     class Slave : public BaseConnection {
 
-        public:
-            Slave(
-                unsigned short port,
-                std::string host,
-                std::string dirName = "",
-                std::string fileName = ""
-            );
+    public:
+        /**
+         * @brief Constructs a Slave connection.
+         *
+         * @param port The port number for the Slave connection.
+         * @param host The hostname or IP address for the Slave connection.
+         * @param dirName The directory name for database files (optional, default: "").
+         * @param fileName The database file name (optional, default: "").
+         */
+        Slave(
+            unsigned short port,
+            std::string host,
+            std::string dirName = "",
+            std::string fileName = ""
+        );
 
-            void assignMaster(Master* master);
-            void assignMaster(
-                unsigned short port,
-                short serverFD,
-                std::string host
-            );
-            void handShakeWithMaster();
+        /**
+         * @brief Assigns a Master object to the Slave connection.
+         *
+         * @param master A pointer to the Master object.
+         */
+        void assignMaster(Master* master);
 
-            unsigned short getMasterPort();
-            short getMasterServerFD();
+        /**
+         * @brief Assigns a Master connection to the Slave by specifying its details.
+         *
+         * @param port The port number of the Master.
+         * @param serverFD The server file descriptor of the Master.
+         * @param host The hostname or IP address of the Master.
+         */
+        void assignMaster(
+            unsigned short port,
+            short serverFD,
+            std::string host
+        );
 
-            bool isInHandShake();
+        /**
+         * @brief Initiates a handshake process with the Master node.
+         */
+        void handShakeWithMaster();
 
-            std::string getMasterHost();
-            std::string getRole() const override;
+        /**
+         * @brief Retrieves the port number of the connected Master.
+         *
+         * @return The port number of the Master.
+         */
+        unsigned short getMasterPort();
 
-        private:
+        /**
+         * @brief Retrieves the server file descriptor of the connected Master.
+         *
+         * @return The server file descriptor of the Master.
+         */
+        short getMasterServerFD();
 
-            Master* master;
+        /**
+         * @brief Checks if the Slave is currently in the handshake process with the Master.
+         *
+         * @return True if the Slave is in the handshake process; otherwise, false.
+         */
+        bool isInHandShake();
 
-            std::string masterHost;
+        /**
+         * @brief Retrieves the hostname or IP address of the connected Master.
+         *
+         * @return The hostname or IP address of the Master.
+         */
+        std::string getMasterHost();
 
-            bool handShakedWithMaster;
+        /**
+         * @brief Retrieves the role of this connection as a Slave.
+         *
+         * @return A string representing the role ("SLAVE").
+         */
+        std::string getRole() const override;
 
-            unsigned short handShakeStep;
-            unsigned short masterPort;
-            short masterServerFD;
+    private:
+
+        /* --------------------------------------------------------- */
+        /*                     VARIABLES                             */
+        /* --------------------------------------------------------- */
+
+        Master* master; ///< Pointer to the associated Master object.
+
+        std::string masterHost; ///< Hostname or IP address of the connected Master.
+
+        bool handShakedWithMaster; ///< Indicates whether the Slave has completed the handshake with the Master.
+
+        unsigned short handShakeStep; ///< Current step in the handshake process.
+        unsigned short masterPort; ///< Port number of the connected Master.
+        short masterServerFD; ///< Server file descriptor of the connected Master.
     };
 
 }

@@ -1,3 +1,30 @@
+[tester::#YG4] [handshake] master: Sent "FULLRESYNC 75cd7bc10c49047e0d163660f3b90625b1af31dc 0"
+[tester::#YG4] [handshake] Sent RDB file.
+[tester::#YG4] [propagation] master: > SET foo 123
+[tester::#YG4] [propagation] master: > SET bar 456
+[tester::#YG4] [propagation] master: > SET baz 789
+[tester::#YG4] [test] Getting key foo
+[tester::#YG4] [test] client: $ redis-cli GET foo
+[your_program] rObject: $-1
+[your_program]  | FROM: FULLRESYNC
+[your_program] rObject: +
+[your_program]  | FROM: 88REDIS0011�    redis-ver7.2.0�redis-bits�@�ctime��eused-mem°�aof-base���n;���Z�
+[your_program] rObject: +OK
+[your_program]  | FROM: SET
+[your_program] rObject: +OK
+[your_program]  | FROM: SET
+[your_program] rObject: +OK
+[your_program]  | FROM: SET
+[your_program] rObject: +123
+[your_program]  | FROM: GET
+[your_program] SENDING BACK: +123
+[your_program]  | FROM: GET
+[your_program] Breaking connection
+[tester::#YG4] Received: "" (no content received)
+[tester::#YG4]            ^ error
+[tester::#YG4] Error: Expected start of a new RESP2 value (either +, -, :, $ or *)
+[tester::#YG4] Test failed (try setting 'debug: true' in your codecrafters.yml to see more details)
+
 [tester::#YG4] Running tests for Stage #YG4 (Replication - Command Processing)
 [tester::#YG4] Master is running on port 6379
 [tester::#YG4] $ ./your_program.sh --port 6380 --replicaof "localhost 6379"
@@ -11,18 +38,12 @@
 [your_program] Listener Started On ServerFD: 3
 [tester::#YG4] [handshake] master: Sent "PONG"
 [tester::#YG4] [handshake] master: Waiting for replica to send "REPLCONF listening-port 6380" command
-[your_program] Mixed Bytes: +PONG\x0d\x0a
-[your_program] COMMAND: PONG
 [tester::#YG4] [handshake] Received ["REPLCONF", "listening-port", "6380"]
 [tester::#YG4] [handshake] master: Sent "OK"
 [tester::#YG4] [handshake] master: Waiting for replica to send "REPLCONF capa" command
-[your_program] Mixed Bytes: +OK\x0d\x0a
-[your_program] COMMAND: OK
 [tester::#YG4] [handshake] Received ["REPLCONF", "capa", "psync2"]
 [tester::#YG4] [handshake] master: Sent "OK"
 [tester::#YG4] [handshake] master: Waiting for replica to send "PSYNC" command
-[your_program] Mixed Bytes: +OK\x0d\x0a
-[your_program] COMMAND: OK
 [tester::#YG4] [handshake] Received ["PSYNC", "?", "-1"]
 [your_program] Hand shake stablished: 4
 [tester::#YG4] [handshake] master: Sent "FULLRESYNC 75cd7bc10c49047e0d163660f3b90625b1af31dc 0"
@@ -32,21 +53,10 @@
 [tester::#YG4] [propagation] master: > SET baz 789
 [tester::#YG4] [test] Getting key foo
 [tester::#YG4] [test] client: $ redis-cli GET foo
-[your_program] Mixed Bytes: +FULLRESYNC 75cd7bc10c49047e0d163660f3b90625b1af31dc 0\x0d\x0a
-[your_program] COMMAND: FULLRESYNC 75cd7bc10c49047e0d163660f3b90625b1af31dc 0
-[your_program] Mixed Bytes: $88\x0d\x0aREDIS0011\xfa\x09redis-ver\x057.2.0\xfa\x0aredis-bits\xc0@\xfa\x05ctime\xc2m\x08\xbce\xfa\x08used-mem\xc2\xb0\xc4\x10\x00\xfa\x08aof-base\xc0\x00\xff\xf0n;\xfe\xc0\xffZ\xa2
-[your_program] Mixed Bytes: *3\x0d\x0a$3\x0d\x0aSET\x0d\x0a$3\x0d\x0afoo\x0d\x0a$3\x0d\x0a123\x0d\x0a*3\x0d\x0a$3\x0d\x0aSET\x0d\x0a$3\x0d\x0abar\x0d\x0a$3\x0d\x0a456\x0d\x0a
-[your_program] COMMAND: SET foo 123
-[your_program] COMMAND: SET bar 456
-[your_program] Mixed Bytes: *3\x0d\x0a$3\x0d\x0aSET\x0d\x0a$3\x0d\x0abaz\x0d\x0a$3\x0d\x0a789\x0d\x0a
-[your_program] COMMAND: SET baz 789
-[your_program] Mixed Bytes: *2\x0d\x0a$3\x0d\x0aGET\x0d\x0a$3\x0d\x0afoo\x0d\x0a
-[your_program] COMMAND: GET foo
-[your_program] REPLICA SAYS: ALL WORKERS ARE BUSY, CREATING NEW ONE
-[your_program] REPLICA SAYS: PROTCOLS OBJ: 2
+[your_program] SENDING BACK: +123
+[your_program]  | FROM: GET | CLIENT_FD: 4
+[your_program] Breaking connection
 [tester::#YG4] Received: "" (no content received)
 [tester::#YG4]            ^ error
 [tester::#YG4] Error: Expected start of a new RESP2 value (either +, -, :, $ or *)
 [tester::#YG4] Test failed (try setting 'debug: true' in your codecrafters.yml to see more details)
-[your_program] Breaking connection
-[your_program] Mixed Bytes: *3\x0d\x0a$3\x0d\x0aSET\x0d\x0a$3\x0d\x0abaz\x0d\x0a$3\x0d\x0a789\x0d\x0a\x003\x0d\x0a$3\x0d\x0aSET\x0d\x0a$3\x0d\x0abar\x0d\x0a$3\x0d\x0a456\x0d\x0a\x00-mem\xc2\xb0\xc4\x10\x00\xfa\x08aof-base\xc0\x00\xff\xf0n;\xfe\xc0\xffZ\xa2\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x
