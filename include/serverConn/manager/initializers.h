@@ -1,6 +1,7 @@
 #pragma once
 #include <serverConn/connection/structs.h>
 #include <serverConn/connection/base.h>
+#include <serverConn/connection/slave.h>
 
 namespace RomulusConn {
     class BaseConnection;
@@ -8,7 +9,7 @@ namespace RomulusConn {
 
 namespace ConnInitializer {
     void replicaHandShake(
-        RomulusConn::BaseConnection* conn,
+        RomulusConn::Slave* conn,
         std::string buffer,
         int clientFD
     );

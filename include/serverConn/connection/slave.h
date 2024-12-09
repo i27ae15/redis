@@ -55,6 +55,17 @@ namespace RomulusConn {
         );
 
         /**
+         * @brief set handshaked with master completed
+         */
+        void setHandShakedWithMaster();
+
+        /**
+         * @brief get handshaked with master.
+         * @return true if slave has complted handshaked with master, false if not.
+         */
+        bool getHandShakedWithMaster();
+
+        /**
          * @brief Initiates a handshake process with the Master node.
          */
         void handShakeWithMaster();

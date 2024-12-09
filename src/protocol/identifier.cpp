@@ -572,11 +572,11 @@ namespace ProtocolID {
         conn->addBytesProcessed(commandSize);
 
         if (!rObj->sendResponse) return;
-        PRINT_HIGHLIGHT(
-            "SENDING BACK: " + rObject->rValue +
-            " | FROM: " + getIdFromBuffer() +
-            " | CLIENT_FD: " + std::to_string(clientFD)
-        );
+        // PRINT_HIGHLIGHT(
+        //     "SENDING BACK: " + rObject->rValue +
+        //     " | FROM: " + getIdFromBuffer() +
+        //     " | CLIENT_FD: " + std::to_string(clientFD)
+        // );
         send(clientFD, rObj->rValue.c_str(), rObj->bytes, rObj->behavior);
     }
 

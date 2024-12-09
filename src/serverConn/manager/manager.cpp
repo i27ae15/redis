@@ -35,7 +35,11 @@ namespace ConnManager {
     ) {
 
         if (conn->replicaHand) {
-            ConnInitializer::replicaHandShake(conn, command.command, clientFD);
+            ConnInitializer::replicaHandShake(
+                static_cast<RomulusConn::Slave*>(conn),
+                command.command,
+                clientFD
+            );
             return;
         }
 
@@ -51,10 +55,6 @@ namespace ConnManager {
 
             unsigned char byte = static_cast<unsigned char>(buffer[i]);
 
-            // TODO: Add possible to listen on $
-            // I think the error is happening due to the RDB file
-            // being sent in a differente buffer and it is not being parsed accordingly
-            // because we don't have a parser on bulk_strings
             if (byte == ProtocolTypes::ARRAY) {
                 command = RomulusParser::parserArray(++i, buffer);
             }
@@ -111,7 +111,21 @@ namespace ConnManager {
         close(clientFD);
     }
 
+    void waitForHandShake(RomulusConn::Slave* conn) {
+
+        while (true) {
+            // Wait for 500 milliseconds
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            if (conn->getHandShakedWithMaster()) break;
+        }
+    }
+
     void listener(RomulusConn::BaseConnection* conn, int serverFD) {
+
+        if (conn->getRole() == RomulusConn::SLAVE) {
+            waitForHandShake(static_cast<RomulusConn::Slave*>(conn));
+        }
+
         PRINT_SUCCESS("Listener Started On ServerFD: " + std::to_string(serverFD));
 
         std::vector<std::thread> threads {};

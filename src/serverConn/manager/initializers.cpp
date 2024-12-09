@@ -33,7 +33,7 @@
 namespace ConnInitializer {
 
     void replicaHandShake(
-        RomulusConn::BaseConnection* conn,
+        RomulusConn::Slave* conn,
         std::string buffer,
         int clientFD
     ) {
@@ -61,6 +61,7 @@ namespace ConnInitializer {
                 // Response after second OK
                 conn->rs++;
                 conn->replicaHand = false;
+                conn->setHandShakedWithMaster();
                 response = ProtocolUtils::constructArray({"PSYNC", "?", "-1"});
                 send(clientFD, response.c_str(), response.size(), 0);
                 PRINT_SUCCESS("Hand shake stablished: " + std::to_string(clientFD));

@@ -45,6 +45,14 @@ namespace RomulusConn {
         return masterServerFD;
     }
 
+    void Slave::setHandShakedWithMaster() {
+        handShakedWithMaster = true;
+    }
+
+    bool Slave::getHandShakedWithMaster() {
+        return handShakedWithMaster;
+    }
+
     bool Slave::isInHandShake() {
         if (!handShakedWithMaster && handShakeStep > 0) return true;
         return false;
