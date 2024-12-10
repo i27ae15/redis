@@ -124,4 +124,9 @@ namespace Cache {
         return std::nullopt;
     }
 
+    std::string DataManager::getKeyType(std::string key) {
+        if (strCache.count(key) > 0 || intCache.count(key) > 0) return STRING;
+
+        return NONE;
+    }
 }

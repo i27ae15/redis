@@ -37,6 +37,7 @@ namespace ProtocolID {
     constexpr const char* GET        = "GET";       ///< Command to get a value.
     constexpr const char* SET        = "SET";       ///< Command to set a value.
     constexpr const char* PING       = "PING";      ///< Command to ping the server.
+    constexpr const char* TYPE       = "TYPE";      ///< Command to get the type of a key.
     constexpr const char* ECHO       = "ECHO";      ///< Command to echo a value.
     constexpr const char* KEYS       = "KEYS";      ///< Command to list keys.
     constexpr const char* INFO       = "INFO";      ///< Command to get server info.
@@ -220,6 +221,7 @@ namespace ProtocolID {
         bool actionForMulti();
         bool actionForExec();
         bool actionForDiscard();
+        bool actionForType();
 
         /**
          * @brief Processes special commands like MULTI, EXEC, and DISCARD.

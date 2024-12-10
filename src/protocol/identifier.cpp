@@ -50,6 +50,7 @@ namespace ProtocolID {
         {MULTI, [this]() { return actionForMulti(); }},
         {EXEC, [this]() { return actionForExec(); }},
         {DISCARD, [this]() { return actionForDiscard(); }},
+        {TYPE, [this]() {return actionForType(); }},
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {
@@ -564,6 +565,15 @@ namespace ProtocolID {
         return true;
     }
 
+    bool ProtocolIdentifier::actionForType() {
+
+        std::string key = conn->getCache()->getKeyType(splittedBuffer[1]);
+        std::string response = ProtocolUtils::constructSimpleString({key});
+        rObject = new ProtocolUtils::ReturnObject(response);
+
+        return true;
+    }
+
     void ProtocolIdentifier::sendResponse(
         unsigned short commandSize,
         unsigned short clientFD,
@@ -572,11 +582,6 @@ namespace ProtocolID {
         conn->addBytesProcessed(commandSize);
 
         if (!rObj->sendResponse) return;
-        // PRINT_HIGHLIGHT(
-        //     "SENDING BACK: " + rObject->rValue +
-        //     " | FROM: " + getIdFromBuffer() +
-        //     " | CLIENT_FD: " + std::to_string(clientFD)
-        // );
         send(clientFD, rObj->rValue.c_str(), rObj->bytes, rObj->behavior);
     }
 

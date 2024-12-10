@@ -3,6 +3,7 @@
 #include <string>
 #include <optional>
 #include <chrono>
+#include <limits>
 
 /**
  * @namespace Cache
@@ -13,6 +14,16 @@ namespace Cache {
     // Cache type identifiers
     constexpr unsigned short STR_CACHE = 0; ///< Identifier for the string cache.
     constexpr unsigned short INT_CACHE = 1; ///< Identifier for the integer cache.
+
+    constexpr const char* STRING = "string";
+    constexpr const char* LIST = "list";
+    constexpr const char* SET = "set";
+    constexpr const char* ZSET = "zset";
+    constexpr const char* HASH = "hash";
+    constexpr const char* STREAM = "stream";
+    constexpr const char* NONE = "none";
+
+    // STRING, LIST, SET, ZSET, HASH, STREAM or NONE
 
     /**
      * @struct strCacheValue
@@ -123,6 +134,15 @@ namespace Cache {
          * @return An optional containing the cached value if it exists and is valid; otherwise, std::nullopt.
          */
         std::optional<std::string> getValue(std::string key);
+
+        /**
+         * @brief Return the type of value the key is storing.
+         *
+         * @param key The key of the cached value.
+         * @return A string of want of the followings: STRING, LIST, SET, ZSET, HASH, STREAM or NONE.
+         * NONE, will be returned if this key does exist.
+         */
+        std::string getKeyType(std::string key);
 
     private:
         /**
