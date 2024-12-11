@@ -69,6 +69,18 @@ namespace Cache {
             size_t expiresIn = 0
         );
 
+        void saveValueToStream(
+            std::string key,
+            std::string id,
+            std::pair<std::string, std::string> values
+        );
+
+        void saveMultipleValuesToStream(
+            std::string& key,
+            std::string& id,
+            std::vector<std::pair<std::string, std::string>>& values
+        );
+
         /**
          * @brief Saves a value as a string in the string cache.
          *
@@ -180,5 +192,6 @@ namespace Cache {
         // Static caches
         static std::unordered_map<std::string, strCacheValue> strCache; ///< Cache for string values.
         static std::unordered_map<std::string, intCacheValue> intCache; ///< Cache for integer values.
+        static std::unordered_map<std::string, std::unordered_map<std::string, std::string>> strStream;
     };
 }

@@ -42,6 +42,7 @@ namespace ProtocolID {
     constexpr const char* KEYS       = "KEYS";      ///< Command to list keys.
     constexpr const char* INFO       = "INFO";      ///< Command to get server info.
     constexpr const char* WAIT       = "WAIT";      ///< Command to wait for replicas.
+    constexpr const char* XADD       = "XADD";      ///< Command to create a stream.
     constexpr const char* INCR       = "INCR";      ///< Command to increment a value.
     constexpr const char* EXEC       = "EXEC";      ///< Command to execute a transaction.
     constexpr const char* PSYNC      = "PSYNC";     ///< Command to synchronize data.
@@ -222,6 +223,7 @@ namespace ProtocolID {
         bool actionForExec();
         bool actionForDiscard();
         bool actionForType();
+        bool actionForXadd();
 
         /**
          * @brief Processes special commands like MULTI, EXEC, and DISCARD.

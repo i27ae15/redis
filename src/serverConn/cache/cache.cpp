@@ -7,6 +7,7 @@ namespace Cache {
 
     std::unordered_map<std::string, strCacheValue> DataManager::strCache;
     std::unordered_map<std::string, intCacheValue> DataManager::intCache;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> DataManager::strStream;
 
     DataManager::DataManager() {}
     DataManager::~DataManager() {}
@@ -57,6 +58,29 @@ namespace Cache {
         size_t expiresIn
     ) {
         setValue(key, value, expires, expiresIn, STR_CACHE);
+    }
+
+    void DataManager::saveMultipleValuesToStream(
+        std::string& key,
+        std::string& streamId,
+        std::vector<std::pair<std::string, std::string>>& values
+    ) {
+
+        for (std::pair<std::string, std::string> v : values) {
+            saveValueToStream(key, streamId, v);
+        }
+    }
+
+    void DataManager::saveValueToStream(
+        std::string key,
+        std::string streamId,
+        std::pair<std::string, std::string> values
+    ) {
+        strStream[key];
+        strStream[key]["id"] = streamId;
+        strStream[key][values.first] = values.second;
+
+        PRINT_HIGHLIGHT("kEY: " + key + " SAVE INTO STREAM WITH VALUES: " + values.first + " AND " + values.second);
     }
 
     void DataManager::setValue(
@@ -126,6 +150,7 @@ namespace Cache {
 
     std::string DataManager::getKeyType(std::string key) {
         if (strCache.count(key) > 0 || intCache.count(key) > 0) return STRING;
+        if (strStream.count(key) > 0) return STREAM;
 
         return NONE;
     }

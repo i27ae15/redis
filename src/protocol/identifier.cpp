@@ -50,7 +50,8 @@ namespace ProtocolID {
         {MULTI, [this]() { return actionForMulti(); }},
         {EXEC, [this]() { return actionForExec(); }},
         {DISCARD, [this]() { return actionForDiscard(); }},
-        {TYPE, [this]() {return actionForType(); }},
+        {TYPE, [this]() { return actionForType(); }},
+        {XADD, [this]() { return actionForXadd(); }},
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {
@@ -569,6 +570,20 @@ namespace ProtocolID {
 
         std::string key = conn->getCache()->getKeyType(splittedBuffer[1]);
         std::string response = ProtocolUtils::constructSimpleString({key});
+        rObject = new ProtocolUtils::ReturnObject(response);
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::actionForXadd() {
+        std::string& streamKey = splittedBuffer[1];
+        std::string& streamId = splittedBuffer[2];
+
+        for (unsigned short i = 3; i < splittedBuffer.size(); i++) {
+            conn->getCache()->saveValueToStream(streamKey, streamId, {splittedBuffer[i], splittedBuffer[i++]});
+        }
+
+        std::string response = ProtocolUtils::constructRestBulkString({streamId});
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;
