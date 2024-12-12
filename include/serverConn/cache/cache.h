@@ -69,13 +69,18 @@ namespace Cache {
             size_t expiresIn = 0
         );
 
-        void saveValueToStream(
-            std::string key,
-            std::string id,
-            std::pair<std::string, std::string> values
+        std::pair<bool, std::string> validateStreamID(
+            std::string rawId
         );
 
-        void saveMultipleValuesToStream(
+        std::pair<bool, std::string> saveValueToStream(
+            std::string key,
+            std::string id,
+            std::pair<std::string, std::string> values,
+            bool makeValidation = true
+        );
+
+        std::pair<bool, std::string> saveMultipleValuesToStream(
             std::string& key,
             std::string& id,
             std::vector<std::pair<std::string, std::string>>& values
@@ -193,5 +198,7 @@ namespace Cache {
         static std::unordered_map<std::string, strCacheValue> strCache; ///< Cache for string values.
         static std::unordered_map<std::string, intCacheValue> intCache; ///< Cache for integer values.
         static std::unordered_map<std::string, std::unordered_map<std::string, std::string>> strStream;
+        static unsigned long lastStreamMiliseconds;
+        static unsigned short lastSequenceNumber;
     };
 }

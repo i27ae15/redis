@@ -578,12 +578,21 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForXadd() {
         std::string& streamKey = splittedBuffer[1];
         std::string& streamId = splittedBuffer[2];
+        std::string response {};
 
         for (unsigned short i = 3; i < splittedBuffer.size(); i++) {
-            conn->getCache()->saveValueToStream(streamKey, streamId, {splittedBuffer[i], splittedBuffer[i++]});
+            std::pair<bool, std::string> saved = conn->getCache()->saveValueToStream(
+                streamKey, streamId, {splittedBuffer[i], splittedBuffer[i++]}
+            );
+
+            if (!saved.first) {
+                response = ProtocolUtils::constructError(saved.second);
+                rObject = new ProtocolUtils::ReturnObject(response);
+                return true;
+            }
         }
 
-        std::string response = ProtocolUtils::constructRestBulkString({streamId});
+        response = ProtocolUtils::constructRestBulkString({streamId});
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;

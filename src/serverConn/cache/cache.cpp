@@ -5,6 +5,9 @@
 
 namespace Cache {
 
+    unsigned long DataManager::lastStreamMiliseconds;
+    unsigned short DataManager::lastSequenceNumber;
+
     std::unordered_map<std::string, strCacheValue> DataManager::strCache;
     std::unordered_map<std::string, intCacheValue> DataManager::intCache;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> DataManager::strStream;
@@ -60,27 +63,66 @@ namespace Cache {
         setValue(key, value, expires, expiresIn, STR_CACHE);
     }
 
-    void DataManager::saveMultipleValuesToStream(
+    std::pair<bool, std::string> DataManager::validateStreamID(
+        std::string rawId
+    ) {
+        std::vector<std::string> splitedId = RomulusUtils::splitString(rawId, "-");
+
+        unsigned long miliseconds = std::stol(splitedId[0]);
+        unsigned short sequenceNumber = std::stoi(splitedId[1]);
+
+        if (!miliseconds && !sequenceNumber) return {false, "The ID specified in XADD must be greater than 0-0"};
+
+        if (
+            (lastStreamMiliseconds > miliseconds) ||
+            (lastStreamMiliseconds == miliseconds && lastSequenceNumber >= sequenceNumber)
+        ) {
+            return {false, "The ID specified in XADD is equal or smaller than the target stream top item"};
+        }
+
+        lastStreamMiliseconds = miliseconds;
+        lastSequenceNumber = sequenceNumber;
+
+        return {true, ""};
+    }
+
+    std::pair<bool, std::string> DataManager::saveMultipleValuesToStream(
         std::string& key,
-        std::string& streamId,
+        std::string& id,
         std::vector<std::pair<std::string, std::string>>& values
     ) {
 
+        std::pair<bool, std::string> isIdValid = validateStreamID(id);
+
+        if (!isIdValid.first) return isIdValid;
+
         for (std::pair<std::string, std::string> v : values) {
-            saveValueToStream(key, streamId, v);
+            saveValueToStream(key, id, v, false);
         }
+
+        return isIdValid;
     }
 
-    void DataManager::saveValueToStream(
+    std::pair<bool, std::string> DataManager::saveValueToStream(
         std::string key,
-        std::string streamId,
-        std::pair<std::string, std::string> values
+        std::string id,
+        std::pair<std::string, std::string> values,
+        bool makeValidations
     ) {
+
+        std::pair<bool, std::string> isIdValid {};
+
+        if (makeValidations) {
+            isIdValid = validateStreamID(id);
+            if (!isIdValid.first) return isIdValid;
+        }
+
         strStream[key];
-        strStream[key]["id"] = streamId;
+        strStream[key]["id"] = id;
         strStream[key][values.first] = values.second;
 
-        PRINT_HIGHLIGHT("kEY: " + key + " SAVE INTO STREAM WITH VALUES: " + values.first + " AND " + values.second);
+        PRINT_HIGHLIGHT("KEY: " + key + " SAVE INTO STREAM WITH VALUES: " + values.first + " AND " + values.second);
+        return isIdValid;
     }
 
     void DataManager::setValue(
