@@ -92,35 +92,56 @@ namespace Cache {
         return {true, ""};
     }
 
+    StreamID DataManager::createFullStreamId() {
+        uint64_t milliseconds = RomulusUtils::getUnixTimeMilliseconds();
+        uint16_t sequenceNumber {};
+
+        return StreamID{milliseconds, sequenceNumber};
+    }
+
+    StreamID DataManager::createPartialStreamId(const std::string& key, const uint64_t milliseconds) {
+
+        uint16_t sequenceNumber {};
+        // Check if the milliseconds is already a key on the stream
+        if (streamKeyIndex.count(key)) {
+            const StreamID& lastId = streamKeyIndex[key].lastID;
+            if (lastId.milliseconds == milliseconds) {
+                sequenceNumber = lastId.sequenceNumber + 1;
+            }
+        } else {
+            sequenceNumber = 1;
+        }
+
+        return StreamID{milliseconds, sequenceNumber};
+    }
+
     StreamIdResult DataManager::createStreamId(
         const std::string& key,
         const std::string& rawId
     ) {
 
-        std::vector<std::string> splitedId = RomulusUtils::splitString(rawId, "-");
+        // Check if we have to create the entire key
+        // We don't need to validate it since we know that this is correct;
+        if (rawId == "*") return {{true, ""}, createFullStreamId()};
 
-        uint64_t miliseconds = std::stol(splitedId[0]);
+        StreamID streamId {};
+        uint64_t milliseconds {};
         uint16_t sequenceNumber {};
 
+        std::vector<std::string> splitedId = RomulusUtils::splitString(rawId, "-");
         std::string& sequence = splitedId[1];
 
+        milliseconds = std::stol(splitedId[0]);
+
+
         if (sequence == "*") {
-            // Check if the miliseconds is already a key on the stream
-            if (streamKeyIndex.count(key)) {
-                const StreamID& lastId = streamKeyIndex[key].lastID;
-                if (lastId.milliseconds == miliseconds) {
-                    sequenceNumber = lastId.sequenceNumber + 1;
-                }
-            } else {
-                sequenceNumber = 1;
-            }
+            streamId = createPartialStreamId(key, milliseconds);
         } else {
             sequenceNumber = std::stoi(splitedId[1]);
+            streamId = {milliseconds, sequenceNumber};
         }
 
-        StreamID streamId = {miliseconds, sequenceNumber};
         OperationResult oResult = validateStreamID(streamId);
-
         return StreamIdResult{oResult, streamId};
     }
 

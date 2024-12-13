@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cstdint>
 
 // Define color codes as macros
 #define RESET       "\033[0m"
@@ -34,4 +35,6 @@ namespace RomulusUtils {
     void displayRawBytesAsChars(const char* buffer, size_t size);
 
     bool canConvertToInt(const std::string& str);
+
+    uint64_t getUnixTimeMilliseconds();
 }

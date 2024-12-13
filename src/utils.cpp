@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <cstring>
 #include <ctype.h>
+#include <chrono>
 
 #include <utils.h>
 
@@ -77,4 +78,15 @@ namespace RomulusUtils {
         return (iss >> num) && (iss.eof());
     }
 
+    uint64_t getUnixTimeMilliseconds() {
+        // Get the current time point
+        auto now = std::chrono::system_clock::now();
+
+        // Convert to milliseconds since epoch
+        auto milliseconds_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()
+        ).count();
+
+        return static_cast<uint64_t>(milliseconds_since_epoch);
+    }
 }

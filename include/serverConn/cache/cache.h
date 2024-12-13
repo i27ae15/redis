@@ -116,6 +116,9 @@ namespace Cache {
             size_t expiresIn = 0
         );
 
+        StreamID createFullStreamId();
+        StreamID createPartialStreamId(const std::string& key, const uint64_t milliseconds);
+
         StreamIdResult createStreamId(const std::string& key, const std::string& rawId);
 
         void saveValueToStream(
