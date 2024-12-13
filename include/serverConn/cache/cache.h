@@ -4,6 +4,8 @@
 #include <optional>
 #include <chrono>
 #include <limits>
+#include <cstdint>
+
 
 /**
  * @namespace Cache
@@ -23,8 +25,6 @@ namespace Cache {
     constexpr const char* STREAM = "stream";
     constexpr const char* NONE = "none";
 
-    // STRING, LIST, SET, ZSET, HASH, STREAM or NONE
-
     /**
      * @struct strCacheValue
      * @brief Represents a cached value of type string, along with its expiration metadata.
@@ -41,6 +41,53 @@ namespace Cache {
     struct intCacheValue {
         int value; ///< The cached integer value.
         std::optional<std::chrono::time_point<std::chrono::system_clock>> expiredDate; ///< Expiration date of the cached value, if applicable.
+    };
+
+    // A compact representation of the Stream ID
+    struct StreamID {
+        uint64_t milliseconds;
+        uint16_t sequenceNumber;
+
+        std::string strRepresentation() const;
+    };
+
+    struct StreamIDHash {
+        std::size_t operator()(const StreamID& id) const {
+            // A common way to hash two integers into one:
+            // Combine with a standard hash combination technique
+            auto h1 = std::hash<uint64_t>()(id.milliseconds);
+            auto h2 = std::hash<uint16_t>()(id.sequenceNumber);
+
+            return h1 ^ (h2 + 0x9e3779b97f4a7c16ULL + (h1 << 6) + (h1 >> 2));
+        }
+    };
+
+    struct StreamIDEqual {
+        bool operator()(const StreamID& lhs, const StreamID& rhs) const {
+            return lhs.milliseconds == rhs.milliseconds &&
+                lhs.sequenceNumber == rhs.sequenceNumber;
+        }
+    };
+
+    struct StreamEntry {
+        StreamID id;
+        std::string streamKey;
+        std::unordered_map<std::string, std::string> fields;
+    };
+
+    struct StreamValue {
+        StreamID lastID;
+        std::unordered_map<StreamID, StreamEntry*, StreamIDHash, StreamIDEqual> values;
+    };
+
+    struct OperationResult {
+        bool isValid;
+        std::string errorMsg;
+    };
+
+    struct StreamIdResult {
+        OperationResult result;
+        StreamID streamId;
     };
 
     /**
@@ -69,20 +116,25 @@ namespace Cache {
             size_t expiresIn = 0
         );
 
-        std::pair<bool, std::string> validateStreamID(
-            std::string rawId
+        StreamIdResult createStreamId(const std::string& key, const std::string& rawId);
+
+        void saveValueToStream(
+            const std::string& key,
+            const StreamID& streamId,
+            std::pair<std::string, std::string>& value
         );
 
-        std::pair<bool, std::string> saveValueToStream(
-            std::string key,
-            std::string id,
-            std::pair<std::string, std::string> values,
-            bool makeValidation = true
-        );
+        OperationResult validateStreamID(const StreamID& streamId);
 
-        std::pair<bool, std::string> saveMultipleValuesToStream(
+        StreamIdResult saveValueToStream(
             std::string& key,
-            std::string& id,
+            std::string& rawId,
+            std::pair<std::string, std::string> value
+        );
+
+        OperationResult saveMultipleValuesToStream(
+            std::string& key,
+            std::string& rawId,
             std::vector<std::pair<std::string, std::string>>& values
         );
 
@@ -197,8 +249,13 @@ namespace Cache {
         // Static caches
         static std::unordered_map<std::string, strCacheValue> strCache; ///< Cache for string values.
         static std::unordered_map<std::string, intCacheValue> intCache; ///< Cache for integer values.
-        static std::unordered_map<std::string, std::unordered_map<std::string, std::string>> strStream;
-        static unsigned long lastStreamMiliseconds;
-        static unsigned short lastSequenceNumber;
+        static uint64_t lastStreamMiliseconds;
+        static uint16_t lastSequenceNumber;
+
+        static std::unordered_map<
+            StreamID, StreamEntry*, StreamIDHash, StreamIDEqual
+        > streamIdIndex;
+
+        static std::unordered_map<std::string, StreamValue> streamKeyIndex;
     };
 }

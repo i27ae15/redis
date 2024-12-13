@@ -10,7 +10,17 @@ namespace Cache {
 
     std::unordered_map<std::string, strCacheValue> DataManager::strCache;
     std::unordered_map<std::string, intCacheValue> DataManager::intCache;
-    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> DataManager::strStream;
+
+    std::unordered_map<
+        StreamID,
+        StreamEntry*, StreamIDHash, StreamIDEqual
+    > DataManager::streamIdIndex;
+
+    std::unordered_map<std::string, StreamValue> DataManager::streamKeyIndex;
+
+    std::string StreamID::strRepresentation() const {
+        return std::to_string(milliseconds) + "-" + std::to_string(sequenceNumber);
+    }
 
     DataManager::DataManager() {}
     DataManager::~DataManager() {}
@@ -63,66 +73,120 @@ namespace Cache {
         setValue(key, value, expires, expiresIn, STR_CACHE);
     }
 
-    std::pair<bool, std::string> DataManager::validateStreamID(
-        std::string rawId
+    OperationResult DataManager::validateStreamID(
+        const StreamID& streamId
     ) {
-        std::vector<std::string> splitedId = RomulusUtils::splitString(rawId, "-");
 
-        unsigned long miliseconds = std::stol(splitedId[0]);
-        unsigned short sequenceNumber = std::stoi(splitedId[1]);
-
-        if (!miliseconds && !sequenceNumber) return {false, "The ID specified in XADD must be greater than 0-0"};
+        if (!streamId.milliseconds && !streamId.sequenceNumber) return {false, "The ID specified in XADD must be greater than 0-0"};
 
         if (
-            (lastStreamMiliseconds > miliseconds) ||
-            (lastStreamMiliseconds == miliseconds && lastSequenceNumber >= sequenceNumber)
+            (lastStreamMiliseconds > streamId.milliseconds) ||
+            (lastStreamMiliseconds == streamId.milliseconds && lastSequenceNumber >= streamId.sequenceNumber)
         ) {
             return {false, "The ID specified in XADD is equal or smaller than the target stream top item"};
         }
 
-        lastStreamMiliseconds = miliseconds;
-        lastSequenceNumber = sequenceNumber;
+        lastStreamMiliseconds = streamId.milliseconds;
+        lastSequenceNumber = streamId.sequenceNumber;
 
         return {true, ""};
     }
 
-    std::pair<bool, std::string> DataManager::saveMultipleValuesToStream(
+    StreamIdResult DataManager::createStreamId(
+        const std::string& key,
+        const std::string& rawId
+    ) {
+
+        std::vector<std::string> splitedId = RomulusUtils::splitString(rawId, "-");
+
+        uint64_t miliseconds = std::stol(splitedId[0]);
+        uint16_t sequenceNumber {};
+
+        std::string& sequence = splitedId[1];
+
+        if (sequence == "*") {
+            // Check if the miliseconds is already a key on the stream
+            if (streamKeyIndex.count(key)) {
+                const StreamID& lastId = streamKeyIndex[key].lastID;
+                if (lastId.milliseconds == miliseconds) {
+                    sequenceNumber = lastId.sequenceNumber + 1;
+                }
+            } else {
+                sequenceNumber = 1;
+            }
+        } else {
+            sequenceNumber = std::stoi(splitedId[1]);
+        }
+
+        StreamID streamId = {miliseconds, sequenceNumber};
+        OperationResult oResult = validateStreamID(streamId);
+
+        return StreamIdResult{oResult, streamId};
+    }
+
+    OperationResult DataManager::saveMultipleValuesToStream(
         std::string& key,
-        std::string& id,
+        std::string& rawId,
         std::vector<std::pair<std::string, std::string>>& values
     ) {
 
-        std::pair<bool, std::string> isIdValid = validateStreamID(id);
+        StreamIdResult streamIdResult = createStreamId(key, rawId);
 
-        if (!isIdValid.first) return isIdValid;
+        OperationResult& vResult = streamIdResult.result;
+        StreamID& streamId = streamIdResult.streamId;
+
+        if (!vResult.isValid) return vResult;
 
         for (std::pair<std::string, std::string> v : values) {
-            saveValueToStream(key, id, v, false);
+            saveValueToStream(key, streamId, v);
         }
 
-        return isIdValid;
+        return vResult;
     }
 
-    std::pair<bool, std::string> DataManager::saveValueToStream(
-        std::string key,
-        std::string id,
-        std::pair<std::string, std::string> values,
-        bool makeValidations
+    void DataManager::saveValueToStream(
+        const std::string& key,
+        const StreamID& streamId,
+        std::pair<std::string, std::string>& value
     ) {
 
-        std::pair<bool, std::string> isIdValid {};
+        // Add the value to the StreamKeyIndex
 
-        if (makeValidations) {
-            isIdValid = validateStreamID(id);
-            if (!isIdValid.first) return isIdValid;
+        // Create the stream value to insert
+        StreamValue& streamValue = streamKeyIndex[key];
+        // Ensure the streamId exists in the values map
+        if (!streamValue.values[streamId]) {
+            streamValue.values[streamId] = new StreamEntry{streamId, key, {}};
         }
 
-        strStream[key];
-        strStream[key]["id"] = id;
-        strStream[key][values.first] = values.second;
+        StreamEntry* streamEntry = streamValue.values[streamId];
 
-        PRINT_HIGHLIGHT("KEY: " + key + " SAVE INTO STREAM WITH VALUES: " + values.first + " AND " + values.second);
-        return isIdValid;
+        streamEntry->id = streamId;
+        streamEntry->streamKey = key;
+        streamEntry->fields[value.first] = value.second;
+
+        streamValue.lastID = streamId;
+
+        // Add value to the streamIdIndex
+        streamIdIndex[streamId] = streamEntry;
+
+        // PRINT_HIGHLIGHT("KEY: " + key + " SAVE INTO STREAM WITH KEY: " + value.first + " AND VALUE " + value.second);
+    }
+
+    StreamIdResult DataManager::saveValueToStream(
+        std::string& key,
+        std::string& rawId,
+        std::pair<std::string, std::string> value
+    ) {
+
+        StreamIdResult streamIdResult = createStreamId(key, rawId);
+        OperationResult& vResult = streamIdResult.result;
+        StreamID& streamId = streamIdResult.streamId;
+
+        if (!vResult.isValid) return streamIdResult;
+        saveValueToStream(key, streamId, value);
+
+        return streamIdResult;
     }
 
     void DataManager::setValue(
@@ -192,7 +256,7 @@ namespace Cache {
 
     std::string DataManager::getKeyType(std::string key) {
         if (strCache.count(key) > 0 || intCache.count(key) > 0) return STRING;
-        if (strStream.count(key) > 0) return STREAM;
+        if (streamKeyIndex.count(key) > 0) return STREAM;
 
         return NONE;
     }

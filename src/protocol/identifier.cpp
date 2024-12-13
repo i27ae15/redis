@@ -581,15 +581,19 @@ namespace ProtocolID {
         std::string response {};
 
         for (unsigned short i = 3; i < splittedBuffer.size(); i++) {
-            std::pair<bool, std::string> saved = conn->getCache()->saveValueToStream(
+            Cache::StreamIdResult saved = conn->getCache()->saveValueToStream(
                 streamKey, streamId, {splittedBuffer[i], splittedBuffer[i++]}
             );
 
-            if (!saved.first) {
-                response = ProtocolUtils::constructError(saved.second);
+            Cache::OperationResult& oResult = saved.result;
+
+            if (!oResult.isValid) {
+                response = ProtocolUtils::constructError(oResult.errorMsg);
                 rObject = new ProtocolUtils::ReturnObject(response);
                 return true;
             }
+
+            streamId = saved.streamId.strRepresentation();
         }
 
         response = ProtocolUtils::constructRestBulkString({streamId});
