@@ -611,14 +611,15 @@ namespace ProtocolID {
         return true;
     }
 
-    std::pair<uint64_t, uint16_t> ProtocolIdentifier::getRange(std::string rawId, bool min) {
+    std::pair<uint64_t, uint16_t> ProtocolIdentifier::getRange(std::string rawId) {
 
         std::pair<uint64_t, uint16_t> range {0, 0};
-        if (rawId == "-") {
-            if (!min) {
-                range.first = std::numeric_limits<uint64_t>::max();
-                range.second = std::numeric_limits<uint16_t>::max();
-            }
+        if (rawId == "-") return range;
+
+        if (rawId == "+") {
+
+            range.first = std::numeric_limits<uint64_t>::max();
+            range.second = std::numeric_limits<uint16_t>::max();
 
             return range;
         }
@@ -638,7 +639,7 @@ namespace ProtocolID {
         std::string& streamKey = splittedBuffer[1];
 
         std::pair<uint64_t, uint16_t> startR = getRange(splittedBuffer[2]);
-        std::pair<uint64_t, uint16_t> endR = getRange(splittedBuffer[3], false);
+        std::pair<uint64_t, uint16_t> endR = getRange(splittedBuffer[3]);
 
         std::stack<Cache::StreamEntry*> rStack = conn->getCache()->xRange(streamKey, startR, endR);
 
