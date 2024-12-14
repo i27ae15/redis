@@ -624,13 +624,20 @@ namespace ProtocolID {
 
     bool ProtocolIdentifier::actionForXread() {
 
-        std::string response {};
-        std::string& streamKey = splittedBuffer[2];
+        std::vector<std::string> wiederArray {};
 
-        response = xRead(streamKey, splittedBuffer[3], "+", false);
-        response = ProtocolUtils::constructArray({streamKey, response}, true);
-        response = ProtocolUtils::constructArray({response}, true);
+        unsigned short leftIdx = 2;
+        unsigned short rightIdx = (splittedBuffer.size() / 2) + 1;
 
+        while (splittedBuffer.size() > rightIdx) {
+            std::string& streamKey = splittedBuffer[leftIdx];
+            std::string currentValue = xRead(streamKey, splittedBuffer[rightIdx], "+", false);
+            wiederArray.emplace_back(ProtocolUtils::constructArray({streamKey, currentValue}, true));
+
+            leftIdx++; rightIdx++;
+        }
+
+        std::string response = ProtocolUtils::constructArray(wiederArray, true);;
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;
