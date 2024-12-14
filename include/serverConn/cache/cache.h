@@ -241,6 +241,8 @@ namespace Cache {
          */
         std::string getKeyType(std::string key);
 
+        unsigned short getNumEntriesForKey(std::string& key);
+
     private:
         /**
          * @brief Determines whether a given string can be converted to an integer.

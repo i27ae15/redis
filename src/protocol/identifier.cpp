@@ -632,8 +632,7 @@ namespace ProtocolID {
         if (splittedBuffer[1] == "block") {
             toAdd = 2;
             leftIdx = 4;
-            unsigned short milliseconds = std::stoi(splittedBuffer[2]);
-            std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+            xReadBlockManager();
         }
 
         unsigned short rightIdx = (splittedBuffer.size() / 2) + toAdd;
@@ -659,6 +658,27 @@ namespace ProtocolID {
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;
+    }
+
+    void ProtocolIdentifier::xReadBlockManager() {
+
+        unsigned short milliseconds = std::stoi(splittedBuffer[2]);
+        if (milliseconds > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+            return;
+        }
+
+        // We will need to wait until a new entry is added to the memory.
+        std::string& streamKey = splittedBuffer[4];
+        unsigned short numEntries = conn->getCache()->getNumEntriesForKey(streamKey);
+
+        // Do this every 100 miliseconds
+        while (true) {
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            if (conn->getCache()->getNumEntriesForKey(streamKey) > numEntries) break;
+        }
+
     }
 
     std::string ProtocolIdentifier::xRead(

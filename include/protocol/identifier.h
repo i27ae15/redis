@@ -230,6 +230,8 @@ namespace ProtocolID {
         bool actionForXrange();
         bool actionForXread();
 
+        void xReadBlockManager();
+
         std::string xRead(
             std::string& streamKey,
             std::string start,

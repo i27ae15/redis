@@ -309,4 +309,9 @@ namespace Cache {
 
         return NONE;
     }
+
+    unsigned short DataManager::getNumEntriesForKey(std::string& key) {
+        return streamKeyIndex[key].values.size();
+    }
+
 }
