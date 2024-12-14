@@ -75,7 +75,7 @@ namespace ProtocolUtils {
         std::string response = '*' + std::to_string(args.size()) + "\r\n";
 
         for (std::string arg : args) {
-            if (checkFirstByte && (arg[0] == ':' || arg[0] == '-')) {
+            if (checkFirstByte && (arg[0] == ':' || arg[0] == '-' || arg[0] == '*')) {
                 response += arg;
             } else {
                 response += constructRestBulkString({arg});

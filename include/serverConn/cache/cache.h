@@ -5,6 +5,7 @@
 #include <chrono>
 #include <limits>
 #include <cstdint>
+#include <stack>
 
 
 /**
@@ -49,6 +50,8 @@ namespace Cache {
         uint16_t sequenceNumber;
 
         std::string strRepresentation() const;
+
+        bool operator<(const StreamID& other) const;
     };
 
     struct StreamIDHash {
@@ -74,6 +77,22 @@ namespace Cache {
         std::string streamKey;
         std::unordered_map<std::string, std::string> fields;
     };
+
+    // struct StreamValueMap {
+    //     using MapType = std::map<StreamID, StreamEntry*, StreamIDHash, StreamIDEqual>;
+    //     MapType values;
+
+    //     // Add helper methods for map operations if needed
+    //     void insert(const StreamID& id, StreamEntry* entry) {
+    //         values[id] = entry;
+    //     }
+
+    //     StreamEntry* find(const StreamID& id) {
+    //         auto it = values.find(id);
+    //         return it != values.end() ? it->second : nullptr;
+    //     }
+    //     // Add other operations like remove, clear, etc.
+    // };
 
     struct StreamValue {
         StreamID lastID;
@@ -206,6 +225,12 @@ namespace Cache {
          * @return An optional containing the cached value if it exists and is valid; otherwise, std::nullopt.
          */
         std::optional<std::string> getValue(std::string key);
+
+        std::stack<StreamEntry*> xRange(
+            std::string key,
+            const std::pair<uint64_t, uint16_t>& startR,
+            const std::pair<uint64_t, uint16_t>& endR
+        );
 
         /**
          * @brief Return the type of value the key is storing.

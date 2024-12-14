@@ -3,6 +3,8 @@
 #include <chrono>
 #include <memory>
 #include <queue>
+#include <stack>
+#include <cstdint>
 
 #include <serverConn/connection/base.h>
 #include <serverConn/connection/master.h>
@@ -33,7 +35,8 @@ namespace ProtocolID {
     allowExecutionOnClient {},
     multiCalledOnClient {},
     currentCommandSize {},
-    currentClient {0},
+    currentClient {},
+    currentId {},
     checkMethods {
         {PING, [this]() { return actionForPing(); }},
         {ECHO, [this]() { return actionForEcho(); }},
@@ -52,6 +55,7 @@ namespace ProtocolID {
         {DISCARD, [this]() { return actionForDiscard(); }},
         {TYPE, [this]() { return actionForType(); }},
         {XADD, [this]() { return actionForXadd(); }},
+        {XRANGE, [this]() { return actionForXrange(); }},
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {
@@ -215,8 +219,11 @@ namespace ProtocolID {
         if (clearObject) cleanResponseObject();
 
         // PRINT_HIGHLIGHT(getIdFromBuffer() + " : " + std::to_string(commandSize));
-        if (checkMethods.count(getIdFromBuffer())) {
-            if (!checkMethods[getIdFromBuffer()]()) {
+
+        currentId = RomulusUtils::upperString(getIdFromBuffer());
+
+        if (checkMethods.count(currentId)) {
+            if (!checkMethods[currentId]()) {
 
                 rObject = new ProtocolUtils::ReturnObject(
                     ProtocolUtils::constructError("PROTOCOL: Could Not Be Identified")
@@ -581,8 +588,9 @@ namespace ProtocolID {
         std::string response {};
 
         for (unsigned short i = 3; i < splittedBuffer.size(); i++) {
+
             Cache::StreamIdResult saved = conn->getCache()->saveValueToStream(
-                streamKey, streamId, {splittedBuffer[i], splittedBuffer[i++]}
+                streamKey, streamId, {splittedBuffer[i], splittedBuffer[++i]}
             );
 
             Cache::OperationResult& oResult = saved.result;
@@ -597,6 +605,47 @@ namespace ProtocolID {
         }
 
         response = ProtocolUtils::constructRestBulkString({streamId});
+        rObject = new ProtocolUtils::ReturnObject(response);
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::actionForXrange() {
+
+        std::vector<std::string> wiederArray {};
+
+        std::string& streamKey = splittedBuffer[1];
+
+        std::vector<std::string> start = RomulusUtils::splitString(splittedBuffer[2], "-");
+        std::vector<std::string> end = RomulusUtils::splitString(splittedBuffer[3], "-");
+
+        std::pair<uint64_t, uint16_t> startR {std::stol(start[0]), 0};
+        std::pair<uint64_t, uint16_t> endR {std::stol(end[0]), 0};
+
+        if (start.size() == 2) startR.second = static_cast<uint16_t>(std::stoi(start[1]));
+        if (end.size() == 2) endR.second = static_cast<uint16_t>(std::stoi(end[1]));
+
+        std::stack<Cache::StreamEntry*> rStack = conn->getCache()->xRange(streamKey, startR, endR);
+
+        while (!rStack.empty()) {
+
+            Cache::StreamEntry* entry = rStack.top();
+
+            std::vector<std::string> args = {};
+            std::string key = entry->id.strRepresentation();
+
+            for (auto& [fieldKey, fieldValue] : entry->fields) {
+                args.emplace_back(fieldKey); args.emplace_back(fieldValue);
+            }
+
+            std::string innerArray = ProtocolUtils::constructArray(args, true);
+            wiederArray.emplace_back(ProtocolUtils::constructArray({key, innerArray}, true));
+
+            rStack.pop();
+
+        }
+
+        std::string response = ProtocolUtils::constructArray(wiederArray, true);
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;

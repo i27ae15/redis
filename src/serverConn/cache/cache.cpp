@@ -1,7 +1,9 @@
 #include <sstream>
+#include <stack>
 
 #include <utils.h>
 #include <serverConn/cache/cache.h>
+
 
 namespace Cache {
 
@@ -20,6 +22,10 @@ namespace Cache {
 
     std::string StreamID::strRepresentation() const {
         return std::to_string(milliseconds) + "-" + std::to_string(sequenceNumber);
+    }
+
+    bool StreamID::operator<(const StreamID& other) const {
+        return milliseconds < other.milliseconds;
     }
 
     DataManager::DataManager() {}
@@ -191,7 +197,8 @@ namespace Cache {
         // Add value to the streamIdIndex
         streamIdIndex[streamId] = streamEntry;
 
-        // PRINT_HIGHLIGHT("KEY: " + key + " SAVE INTO STREAM WITH KEY: " + value.first + " AND VALUE " + value.second);
+        PRINT_HIGHLIGHT("KEY: " + key + " SAVE INTO STREAM WITH KEY: " + value.first + " AND VALUE " + value.second);
+        PRINT_HIGHLIGHT("VECTOR SIZE: " + std::to_string(streamValue.values.size()));
     }
 
     StreamIdResult DataManager::saveValueToStream(
@@ -273,6 +280,29 @@ namespace Cache {
         if (intCache.count(key)) return checkCache(intCache[key]);
 
         return std::nullopt;
+    }
+
+    std::stack<StreamEntry*> DataManager::xRange(
+        std::string key,
+        const std::pair<uint64_t, uint16_t>& startR,
+        const std::pair<uint64_t, uint16_t>& endR
+    ) {
+
+        std::unordered_map<
+            StreamID, StreamEntry*, StreamIDHash, StreamIDEqual
+        >& streamValue = streamKeyIndex[key].values;
+
+        std::stack<StreamEntry*> rStack;
+
+        for (const auto& [key, value] : streamValue) {
+
+            bool vStarting = (key.milliseconds >= startR.first && key.sequenceNumber >= startR.second);
+            bool vEnding = (endR.first >= key.milliseconds && endR.second >= key.sequenceNumber);
+
+            if (vStarting && vEnding) rStack.emplace(value);
+        }
+
+        return rStack;
     }
 
     std::string DataManager::getKeyType(std::string key) {

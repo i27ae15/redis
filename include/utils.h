@@ -37,4 +37,5 @@ namespace RomulusUtils {
     bool canConvertToInt(const std::string& str);
 
     uint64_t getUnixTimeMilliseconds();
+    std::string upperString(const std::string& str);
 }

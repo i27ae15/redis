@@ -47,6 +47,7 @@ namespace ProtocolID {
     constexpr const char* EXEC       = "EXEC";      ///< Command to execute a transaction.
     constexpr const char* PSYNC      = "PSYNC";     ///< Command to synchronize data.
     constexpr const char* MULTI      = "MULTI";     ///< Command to start a transaction.
+    constexpr const char* XRANGE     = "XRANGE";    ///< Command to get entries from a stream in a range.
     constexpr const char* CONFIG     = "CONFIG";    ///< Command to get/set server configuration.
     constexpr const char* DISCARD    = "DISCARD";   ///< Command to discard a transaction.
     constexpr const char* REPLCONF   = "REPLCONF";  ///< Command to configure replication.
@@ -187,6 +188,7 @@ namespace ProtocolID {
         std::string buffer; ///< Buffer for the current command.
         std::string protocol; ///< The current protocol.
         std::string rawBuffer; ///< Raw buffer from the client.
+        std::string currentId; ///< The current Id in upper case.
         std::vector<std::string> splittedBuffer; ///< Splitted command arguments.
 
         std::unordered_map<std::string, std::function<bool()>> checkMethods; ///< Map of protocol commands to their handlers.
@@ -224,6 +226,7 @@ namespace ProtocolID {
         bool actionForDiscard();
         bool actionForType();
         bool actionForXadd();
+        bool actionForXrange();
 
         /**
          * @brief Processes special commands like MULTI, EXEC, and DISCARD.

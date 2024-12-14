@@ -114,7 +114,7 @@ namespace ConnManager {
     void waitForHandShake(RomulusConn::Slave* conn) {
 
         while (true) {
-            // Wait for 500 milliseconds
+            // Wait for 50 milliseconds
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             if (conn->getHandShakedWithMaster()) break;
         }

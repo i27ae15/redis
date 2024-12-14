@@ -7,6 +7,7 @@
 #include <cstring>
 #include <ctype.h>
 #include <chrono>
+#include <algorithm>
 
 #include <utils.h>
 
@@ -88,5 +89,12 @@ namespace RomulusUtils {
         ).count();
 
         return static_cast<uint64_t>(milliseconds_since_epoch);
+    }
+
+    std::string upperString(const std::string& str) {
+        std::string result = str;
+        std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+
+        return result;
     }
 }
