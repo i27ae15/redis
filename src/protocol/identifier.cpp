@@ -626,18 +626,36 @@ namespace ProtocolID {
 
         std::vector<std::string> wiederArray {};
 
+        unsigned short toAdd = 1;
         unsigned short leftIdx = 2;
-        unsigned short rightIdx = (splittedBuffer.size() / 2) + 1;
+
+        if (splittedBuffer[1] == "block") {
+            toAdd = 2;
+            leftIdx = 4;
+            unsigned short milliseconds = std::stoi(splittedBuffer[2]);
+            std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+        }
+
+        unsigned short rightIdx = (splittedBuffer.size() / 2) + toAdd;
 
         while (splittedBuffer.size() > rightIdx) {
             std::string& streamKey = splittedBuffer[leftIdx];
             std::string currentValue = xRead(streamKey, splittedBuffer[rightIdx], "+", false);
-            wiederArray.emplace_back(ProtocolUtils::constructArray({streamKey, currentValue}, true));
 
             leftIdx++; rightIdx++;
+            if (currentValue == "*0\r\n") continue;
+
+            wiederArray.emplace_back(ProtocolUtils::constructArray({streamKey, currentValue}, true));
         }
 
-        std::string response = ProtocolUtils::constructArray(wiederArray, true);;
+        std::string response {};
+
+        if (!wiederArray.size()) {
+            response = ProtocolTypes::NONE_R;
+        } else {
+            response = ProtocolUtils::constructArray(wiederArray, true);;
+        }
+
         rObject = new ProtocolUtils::ReturnObject(response);
 
         return true;

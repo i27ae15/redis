@@ -196,6 +196,7 @@ namespace Cache {
 
         // Add value to the streamIdIndex
         streamIdIndex[streamId] = streamEntry;
+        // PRINT_HIGHLIGHT("SAVE KEY: " + key + " WITH INNER KEY: " + value.first + " AND VALUE: " + value.second);
     }
 
     StreamIdResult DataManager::saveValueToStream(

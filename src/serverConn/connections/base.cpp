@@ -82,9 +82,11 @@ namespace RomulusConn {
             }
         }
 
+        // There might be a bug where somehow the ProtocolID class
+        // Depends on this getProtocolIdr to do some internal things.
         print("ALL WORKERS ARE BUSY, CREATING NEW ONE", YELLOW);
         setProtocolIdr(new ProtocolID::ProtocolIdentifier(this), true);
-        print("PROTCOLS OBJ: " + std::to_string(protocols.size()), YELLOW);
+        print("PROTOCOLS OBJ: " + std::to_string(protocols.size()), YELLOW);
         return protocolIdr;
     }
 
@@ -110,7 +112,7 @@ namespace RomulusConn {
     ) {
 
         protocols.push_back(protocolIdr);
-        if (this->protocolIdr == nullptr) this->protocolIdr = protocolIdr; return;
+        if (this->protocolIdr == nullptr) {this->protocolIdr = protocolIdr; return;}
 
         if (!override) {
             PRINT_ERROR("There is already a ProtocolID::ProtocolIndetifier linked to this object!");
