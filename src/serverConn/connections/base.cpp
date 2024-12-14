@@ -120,7 +120,7 @@ namespace RomulusConn {
             return;
         }
 
-        PRINT_WARNING("Overwritting main ProtocolID::ProtocolIndetifier object!");
+        PRINT_WARNING("OVERRIDING MAIN PROTOCOL_ID::PROTOCOL_IDENTIFIER OBJECT!");
         this->protocolIdr = protocolIdr;
     }
 
