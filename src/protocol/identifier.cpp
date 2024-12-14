@@ -674,7 +674,6 @@ namespace ProtocolID {
 
         // Do this every 100 miliseconds
         while (true) {
-
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             if (conn->getCache()->getNumEntriesForKey(streamKey) > numEntries) break;
         }
