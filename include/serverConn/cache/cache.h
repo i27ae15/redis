@@ -242,6 +242,7 @@ namespace Cache {
         std::string getKeyType(std::string key);
 
         unsigned short getNumEntriesForKey(std::string& key);
+        StreamValue* getStreamValue(std::string& key);
 
     private:
         /**

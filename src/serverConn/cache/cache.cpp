@@ -314,4 +314,8 @@ namespace Cache {
         return streamKeyIndex[key].values.size();
     }
 
+    StreamValue* DataManager::getStreamValue(std::string& key) {
+        return &streamKeyIndex[key];
+    }
+
 }
