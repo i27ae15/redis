@@ -45,6 +45,7 @@ namespace ProtocolID {
     constexpr const char* XADD       = "XADD";      ///< Command to create a stream.
     constexpr const char* INCR       = "INCR";      ///< Command to increment a value.
     constexpr const char* EXEC       = "EXEC";      ///< Command to execute a transaction.
+    constexpr const char* XREAD      = "XREAD";     ///< Command to get entries from a stream.
     constexpr const char* PSYNC      = "PSYNC";     ///< Command to synchronize data.
     constexpr const char* MULTI      = "MULTI";     ///< Command to start a transaction.
     constexpr const char* XRANGE     = "XRANGE";    ///< Command to get entries from a stream in a range.
@@ -227,6 +228,14 @@ namespace ProtocolID {
         bool actionForType();
         bool actionForXadd();
         bool actionForXrange();
+        bool actionForXread();
+
+        std::string xRead(
+            std::string& streamKey,
+            std::string start,
+            std::string end,
+            bool includeStart = true
+        );
 
         std::pair<uint64_t, uint16_t> getRange(std::string rawId);
 

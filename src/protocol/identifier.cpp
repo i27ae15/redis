@@ -57,6 +57,7 @@ namespace ProtocolID {
         {TYPE, [this]() { return actionForType(); }},
         {XADD, [this]() { return actionForXadd(); }},
         {XRANGE, [this]() { return actionForXrange(); }},
+        {XREAD, [this]() { return actionForXread(); }},
     },
     rObject {new ProtocolUtils::ReturnObject("+\r\n", 0)}
     {
@@ -611,35 +612,42 @@ namespace ProtocolID {
         return true;
     }
 
-    std::pair<uint64_t, uint16_t> ProtocolIdentifier::getRange(std::string rawId) {
-
-        std::pair<uint64_t, uint16_t> range {0, 0};
-        if (rawId == "-") return range;
-
-        if (rawId == "+") {
-
-            range.first = std::numeric_limits<uint64_t>::max();
-            range.second = std::numeric_limits<uint16_t>::max();
-
-            return range;
-        }
-
-        std::vector<std::string> splittedId = RomulusUtils::splitString(rawId, "-");
-        range.first = std::stol(splittedId[0]);
-
-        if (splittedId.size() == 2) range.second = static_cast<uint16_t>(std::stoi(splittedId[1]));
-
-        return range;
-    }
-
     bool ProtocolIdentifier::actionForXrange() {
-
-        std::vector<std::string> wiederArray {};
 
         std::string& streamKey = splittedBuffer[1];
 
-        std::pair<uint64_t, uint16_t> startR = getRange(splittedBuffer[2]);
-        std::pair<uint64_t, uint16_t> endR = getRange(splittedBuffer[3]);
+        std::string response = xRead(streamKey, splittedBuffer[2], splittedBuffer[3]);
+        rObject = new ProtocolUtils::ReturnObject(response);
+
+        return true;
+    }
+
+    bool ProtocolIdentifier::actionForXread() {
+
+        std::string response {};
+        std::string& streamKey = splittedBuffer[2];
+
+        response = xRead(streamKey, splittedBuffer[3], "+", false);
+        response = ProtocolUtils::constructArray({streamKey, response}, true);
+        response = ProtocolUtils::constructArray({response}, true);
+
+        rObject = new ProtocolUtils::ReturnObject(response);
+
+        return true;
+    }
+
+    std::string ProtocolIdentifier::xRead(
+        std::string& streamKey,
+        std::string start,
+        std::string end,
+        bool includeStart
+    ) {
+        std::vector<std::string> wiederArray {};
+
+        std::pair<uint64_t, uint16_t> startR = getRange(start);
+        std::pair<uint64_t, uint16_t> endR = getRange(end);
+
+        if (!includeStart) startR.second++;
 
         std::stack<Cache::StreamEntry*> rStack = conn->getCache()->xRange(streamKey, startR, endR);
 
@@ -662,9 +670,28 @@ namespace ProtocolID {
         }
 
         std::string response = ProtocolUtils::constructArray(wiederArray, true);
-        rObject = new ProtocolUtils::ReturnObject(response);
+        return response;
+    }
 
-        return true;
+    std::pair<uint64_t, uint16_t> ProtocolIdentifier::getRange(std::string rawId) {
+
+        std::pair<uint64_t, uint16_t> range {0, 0};
+        if (rawId == "-") return range;
+
+        if (rawId == "+") {
+
+            range.first = std::numeric_limits<uint64_t>::max();
+            range.second = std::numeric_limits<uint16_t>::max();
+
+            return range;
+        }
+
+        std::vector<std::string> splittedId = RomulusUtils::splitString(rawId, "-");
+        range.first = std::stol(splittedId[0]);
+
+        if (splittedId.size() == 2) range.second = static_cast<uint16_t>(std::stoi(splittedId[1]));
+
+        return range;
     }
 
     void ProtocolIdentifier::sendResponse(
@@ -724,6 +751,5 @@ namespace ProtocolID {
         interruptFlag.store(true);
         cv.notify_all();
     }
-
 
 }
