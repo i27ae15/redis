@@ -5,6 +5,7 @@
 #include <queue>
 #include <stack>
 #include <cstdint>
+#include <limits>
 
 #include <serverConn/connection/base.h>
 #include <serverConn/connection/master.h>
@@ -610,20 +611,34 @@ namespace ProtocolID {
         return true;
     }
 
+    std::pair<uint64_t, uint16_t> ProtocolIdentifier::getRange(std::string rawId, bool min) {
+
+        std::pair<uint64_t, uint16_t> range {0, 0};
+        if (rawId == "-") {
+            if (!min) {
+                range.first = std::numeric_limits<uint64_t>::max();
+                range.second = std::numeric_limits<uint16_t>::max();
+            }
+
+            return range;
+        }
+
+        std::vector<std::string> splittedId = RomulusUtils::splitString(rawId, "-");
+        range.first = std::stol(splittedId[0]);
+
+        if (splittedId.size() == 2) range.second = static_cast<uint16_t>(std::stoi(splittedId[1]));
+
+        return range;
+    }
+
     bool ProtocolIdentifier::actionForXrange() {
 
         std::vector<std::string> wiederArray {};
 
         std::string& streamKey = splittedBuffer[1];
 
-        std::vector<std::string> start = RomulusUtils::splitString(splittedBuffer[2], "-");
-        std::vector<std::string> end = RomulusUtils::splitString(splittedBuffer[3], "-");
-
-        std::pair<uint64_t, uint16_t> startR {std::stol(start[0]), 0};
-        std::pair<uint64_t, uint16_t> endR {std::stol(end[0]), 0};
-
-        if (start.size() == 2) startR.second = static_cast<uint16_t>(std::stoi(start[1]));
-        if (end.size() == 2) endR.second = static_cast<uint16_t>(std::stoi(end[1]));
+        std::pair<uint64_t, uint16_t> startR = getRange(splittedBuffer[2]);
+        std::pair<uint64_t, uint16_t> endR = getRange(splittedBuffer[3], false);
 
         std::stack<Cache::StreamEntry*> rStack = conn->getCache()->xRange(streamKey, startR, endR);
 

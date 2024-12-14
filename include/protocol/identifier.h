@@ -228,6 +228,8 @@ namespace ProtocolID {
         bool actionForXadd();
         bool actionForXrange();
 
+        std::pair<uint64_t, uint16_t> getRange(std::string rawId, bool min = true);
+
         /**
          * @brief Processes special commands like MULTI, EXEC, and DISCARD.
          * @return True if a special command was processed; false otherwise.

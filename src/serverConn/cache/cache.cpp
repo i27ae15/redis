@@ -196,9 +196,6 @@ namespace Cache {
 
         // Add value to the streamIdIndex
         streamIdIndex[streamId] = streamEntry;
-
-        PRINT_HIGHLIGHT("KEY: " + key + " SAVE INTO STREAM WITH KEY: " + value.first + " AND VALUE " + value.second);
-        PRINT_HIGHLIGHT("VECTOR SIZE: " + std::to_string(streamValue.values.size()));
     }
 
     StreamIdResult DataManager::saveValueToStream(
