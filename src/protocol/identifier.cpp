@@ -111,7 +111,7 @@ namespace ProtocolID {
 
     void ProtocolIdentifier::setReplicasOscarKilo(unsigned short n) {
         RomulusConn::Master* mConn = static_cast<RomulusConn::Master*>(conn);
-        mConn->setReplicasOscarKilo(0);
+        mConn->setReplicasOscarKilo(n);
     }
 
     void ProtocolIdentifier::setInProcess(bool value) {
