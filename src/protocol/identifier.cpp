@@ -251,7 +251,6 @@ namespace ProtocolID {
     bool ProtocolIdentifier::actionForEcho() {
 
         std::string &toEcho = splittedBuffer[1];
-        // std::string echo = "$" + std::to_string(pre_echo.size()) + "\r\n" + pre_echo + "\r\n";
         std::string response = ProtocolUtils::constructRestBulkString({toEcho});
         rObject = new ProtocolUtils::ReturnObject(response);
 
