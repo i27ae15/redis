@@ -632,13 +632,12 @@ namespace ProtocolID {
         if (splittedBuffer[1] == "block") {
             toAdd = 2;
             leftIdx = 4;
-            // Check if we have a $ at the end
 
+            // Check if we have a $ at the end
             if (splittedBuffer[splittedBuffer.size() - 1] == "$") {
 
                 std::string lastStreamId = conn->getCache()->getStreamValue(splittedBuffer[4])->lastID.strRepresentation();
                 splittedBuffer[splittedBuffer.size() - 1] = lastStreamId;
-                PRINT_HIGHLIGHT(lastStreamId);
             }
 
             xReadBlockManager();
